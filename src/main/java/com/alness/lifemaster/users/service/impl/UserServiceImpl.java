@@ -12,7 +12,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,6 +23,7 @@ import com.alness.lifemaster.common.dto.ResponseDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
+import com.alness.lifemaster.users.dto.CustomUser;
 import com.alness.lifemaster.users.dto.request.UserRequest;
 import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.entity.UserEntity;
@@ -123,7 +123,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                         String.format("User with name: [%s] not found in database", username)));
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
         user.getProfiles().forEach(profile -> authorities.add(new SimpleGrantedAuthority(profile.getName())));
-        return new User(user.getUsername(), user.getPassword(), authorities);
+        return new CustomUser(user.getUsername(), user.getPassword(), authorities, user.getId());
     }
 
     @Override

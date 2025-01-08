@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,13 +14,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.alness.lifemaster.auth.configuration.JwtTokenConfig;
 import com.alness.lifemaster.auth.dto.AuthenticationDto;
 import com.alness.lifemaster.auth.dto.KeyPrefix;
 import com.alness.lifemaster.common.enums.AllowedProfiles;
+import com.alness.lifemaster.users.dto.CustomUser;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -32,7 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
+public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenConfig jwtTokenConfig;
 
@@ -70,14 +71,18 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
             Authentication authResult) throws IOException, ServletException {
-        String username = ((User) authResult.getPrincipal()).getUsername();
+
+        CustomUser customUser = (CustomUser) authResult.getPrincipal();
+        String username = customUser.getUsername();
+        UUID userId = customUser.getUserId();
 
         Collection<? extends GrantedAuthority> profiles = authResult.getAuthorities();
         boolean isAdmin = profiles.stream().anyMatch(res -> res.getAuthority().equals(AllowedProfiles.ADMIN.getName()));
 
         Claims claims = Jwts.claims();
         claims.put("authorities", new ObjectMapper().writeValueAsString(profiles));
-        claims.put("isAdmin", isAdmin);
+        claims.put("admin", isAdmin);
+        claims.put("id", userId);
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
@@ -92,7 +97,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         response.addHeader(HttpHeaders.AUTHORIZATION, KeyPrefix.PREFIX_TOKEN + token);
 
         Map<String, Object> bodyResponse = new HashMap<>();
-        bodyResponse.put("accessToken", token);
+        bodyResponse.put("token", token);
         bodyResponse.put("message", "I log in with a valid user.");
         bodyResponse.put("code", ApiCodes.API_CODE_202);
         response.getWriter().write(new ObjectMapper().writeValueAsString(bodyResponse));
