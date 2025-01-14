@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.profiles.dto.request.ProfileRequest;
 import com.alness.lifemaster.profiles.dto.response.ProfileResponse;
 import com.alness.lifemaster.profiles.service.ProfileService;
@@ -43,5 +44,11 @@ public class ProfileController {
     public ResponseEntity<ProfileResponse> postMethodName(@RequestBody ProfileRequest request) {
         ProfileResponse response = profileService.save(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/{profileId}/modules")
+    public ResponseEntity<List<ModuleResponse>> getModulesByProfile(@PathVariable String profileId) {
+        List<ModuleResponse> modules = profileService.getModulesByProfile(profileId);
+        return new ResponseEntity<>(modules, HttpStatus.OK);
     }
 }

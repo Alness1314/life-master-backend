@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.profiles.dto.request.ProfileRequest;
 import com.alness.lifemaster.profiles.dto.response.ProfileResponse;
 
@@ -14,4 +15,5 @@ public interface ProfileService {
     public List<ProfileResponse> find(Map<String, String> params);
     public ProfileResponse update(String id, ProfileRequest request);
     public ResponseDto delete(String id);
+    public List<ModuleResponse> getModulesByProfile(String profileId);
 }
