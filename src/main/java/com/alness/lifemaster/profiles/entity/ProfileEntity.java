@@ -55,4 +55,10 @@ public class ProfileEntity {
         setCreated(LocalDateTime.now());
         setUpdated(LocalDateTime.now());
     }
+
+    @Override
+    public String toString() {
+        return "ProfileEntity [id=" + id + ", name=" + name + ", erased=" + erased + "]";
+    }
+
 }

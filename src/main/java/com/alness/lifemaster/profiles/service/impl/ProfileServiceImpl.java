@@ -2,6 +2,7 @@ package com.alness.lifemaster.profiles.service.impl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
@@ -92,13 +93,15 @@ public class ProfileServiceImpl implements ProfileService {
         ProfileEntity profile = profileRepository.findByIdWithModules(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
 
+        Set<ModuleEntity> allowedModules = profile.getModules();
+
         return profile.getModules().stream()
                 .filter(module -> module.getParent() == null) // Inicia desde los módulos raíz
-                .map(this::convertToDto)
+                .map(module -> convertToDto(module, allowedModules))
                 .toList();
     }
 
-    private ModuleResponse convertToDto(ModuleEntity module) {
+    private ModuleResponse convertToDto(ModuleEntity module, Set<ModuleEntity> allowedModules) {
         return ModuleResponse.builder()
                 .id(module.getId())
                 .name(module.getName())
@@ -106,7 +109,9 @@ public class ProfileServiceImpl implements ProfileService {
                 .iconName(module.getIconName())
                 .isParent(module.getIsParent())
                 .erased(module.getErased())
-                .children(module.getChildren().stream().map(this::convertToDto).toList())
+                .children(module.getChildren().stream()
+                        .filter(allowedModules::contains)
+                        .map(child -> convertToDto(child, allowedModules)).toList())
                 .build();
     }
 

@@ -79,4 +79,10 @@ public class ModuleEntity {
         child.setParent(null);
     }
 
+    @Override
+    public String toString() {
+        return "ModuleEntity [id=" + id + ", name=" + name + ", route=" + route + ", erased=" + erased + ", isParent="
+                + isParent + ", profiles=" + profiles + "]";
+    }
+
 }

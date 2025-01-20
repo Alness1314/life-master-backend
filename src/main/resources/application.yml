@@ -24,7 +24,7 @@ spring:
         database-platform: org.hibernate.dialect.PostgreSQLDialect 
         show-sql: true
         hibernate: 
-            ddl-auto: none # Opciones: create, create-drop, update, validate, none
+            ddl-auto: create # Opciones: create, create-drop, update, validate, none
 
 #Open api swagger ui 
 springdoc: 

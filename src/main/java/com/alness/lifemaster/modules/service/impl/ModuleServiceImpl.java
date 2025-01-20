@@ -37,8 +37,14 @@ public class ModuleServiceImpl implements ModuleService {
         try {
             for (String profileName : module.getProfile()) {
                 ProfileEntity profile = profileRepository.findByName(profileName).orElse(null);
-                newModule.getProfiles().add(profile);
+                log.info("profile: {}", profile);
+
+                if (profile != null) {
+                    newModule.getProfiles().add(profile);
+                    profile.getModules().add(newModule); // Actualiza el otro lado de la relación
+                }
             }
+            log.info("module to save {}", newModule);
             newModule = moduleRepository.save(newModule);
             return mapperModule(newModule);
         } catch (Exception e) {
