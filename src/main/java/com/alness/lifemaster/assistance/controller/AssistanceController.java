@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,28 +22,36 @@ import com.alness.lifemaster.assistance.service.AssistanceService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("${api.prefix}/assistance")
+@RequestMapping("${api.prefix}/usuarios")
 @Tag(name = "Assistance", description = ".")
 public class AssistanceController {
     @Autowired
     private AssistanceService assistanceService;
 
-
-    @GetMapping
-    public ResponseEntity<List<AssistanceResponse>> findAll(@RequestParam Map<String, String> param) {
-        List<AssistanceResponse> response = assistanceService.find();
+    @GetMapping("/{userId}/assistance")
+    public ResponseEntity<List<AssistanceResponse>> findAll(@PathVariable String userId,
+            @RequestParam Map<String, String> param) {
+        List<AssistanceResponse> response = assistanceService.find(userId, param);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<AssistanceResponse> findOne(@PathVariable String id) {
-        AssistanceResponse response = assistanceService.findOne(id);
+    @GetMapping("/{userId}/assistance/{id}")
+    public ResponseEntity<AssistanceResponse> findOne(@PathVariable String userId, @PathVariable String id) {
+        AssistanceResponse response = assistanceService.findOne(userId, id);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping
-    public ResponseEntity<AssistanceResponse> postMethodName(@RequestBody AssistanceRequest request) {
-        AssistanceResponse response = assistanceService.save(request);
+    @PostMapping("/{userId}/assistance")
+    public ResponseEntity<AssistanceResponse> postMethodName(@PathVariable String userId,
+            @RequestBody AssistanceRequest request) {
+        AssistanceResponse response = assistanceService.save(userId, request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PatchMapping("/{userId}/assistance/{id}")
+    public ResponseEntity<AssistanceResponse> patchAssistance(@PathVariable String userId, @PathVariable String id,
+            @RequestParam String departureTime) {
+        AssistanceResponse response = assistanceService.assignOutput(userId, id, departureTime);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
