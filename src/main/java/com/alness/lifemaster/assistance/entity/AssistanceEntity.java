@@ -10,6 +10,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,28 +25,31 @@ public class AssistanceEntity {
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
-    @Column(nullable = false, updatable = false, columnDefinition = "date")
-    private LocalDate fecha;
+    @Column(name = "work_date", nullable = false, updatable = false, columnDefinition = "date")
+    private LocalDate workDate;
 
-    @Column(nullable = true, updatable = false, columnDefinition = "time without time zone")
-    private LocalTime horaEntrada;
+    @Column(name = "hora_entrada", nullable = true, updatable = false, columnDefinition = "time without time zone")
+    private LocalTime timeEntry;
 
-    @Column(nullable = true, updatable = false, columnDefinition = "time without time zone")
-    private LocalTime horaSalida;
+    @Column(name = "hora_salida", nullable = true, updatable = false, columnDefinition = "time without time zone")
+    private LocalTime departureTime;
 
-    @Column(nullable = true, columnDefinition = "boolean")
-    private Boolean retardo;
-
-    @Column(nullable = true, columnDefinition = "boolean")
-    private Boolean faltaJust;
+    @Column(name = "on_time", nullable = true, columnDefinition = "boolean")
+    private Boolean onTime;
 
     @Column(nullable = true, columnDefinition = "boolean")
-    private Boolean faltaInjust;
+    private Boolean retard;
 
-    @Column(nullable = false, updatable = false, columnDefinition = "timestamp without time zone")
+    @Column(name = "justified_absence", nullable = true, columnDefinition = "boolean")
+    private Boolean justifiedAbsence;
+
+    @Column(name = "unjustified_absence", nullable = true, columnDefinition = "boolean")
+    private Boolean unjustifiedAbsence;
+
+    @Column(name = "create_at", nullable = false, updatable = false, columnDefinition = "timestamp without time zone")
     private LocalDateTime createAt;
 
-    @Column(nullable = false, updatable = true, columnDefinition = "timestamp without time zone")
+    @Column(name = "update_at", nullable = false, updatable = true, columnDefinition = "timestamp without time zone")
     private LocalDateTime updateAt;
 
     @Column(nullable = false, columnDefinition = "boolean")
@@ -54,6 +58,12 @@ public class AssistanceEntity {
     @PrePersist
     private void init(){
         setCreateAt(LocalDateTime.now());
+        setUpdateAt(LocalDateTime.now());
         setErased(false);
+    }
+
+    @PreUpdate
+    private void preUpdate(){
+        setUpdateAt(LocalDateTime.now());
     }
 }
