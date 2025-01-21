@@ -66,6 +66,8 @@ public class ExpensesEntity {
     @PrePersist()
     public void init() {
         setCreateAt(LocalDateTime.now());
+        setUpdateAt(LocalDateTime.now());
+        setErased(false);
     }
 
     @PreUpdate

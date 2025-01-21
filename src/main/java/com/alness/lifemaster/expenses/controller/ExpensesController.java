@@ -28,12 +28,13 @@ import jakarta.validation.Valid;
 @RequestMapping("${api.prefix}/usuarios")
 @Tag(name = "Expenses", description = ".")
 public class ExpensesController {
-     @Autowired
+    @Autowired
     private ExpensesService expensesService;
 
     @GetMapping("/{userId}/expenses")
-    public ResponseEntity<List<ExpensesResponse>> findAll(@PathVariable String userId, @RequestParam Map<String, String> parameters) {
-        List<ExpensesResponse> response = expensesService.find( userId, parameters);
+    public ResponseEntity<List<ExpensesResponse>> findAll(@PathVariable String userId,
+            @RequestParam Map<String, String> parameters) {
+        List<ExpensesResponse> response = expensesService.find(userId, parameters);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 
@@ -44,13 +45,15 @@ public class ExpensesController {
     }
 
     @PostMapping("/{userId}/expenses")
-    public ResponseEntity<ExpensesResponse> save(@PathVariable String userId, @Valid @RequestBody ExpensesRequest request) {
+    public ResponseEntity<ExpensesResponse> save(@PathVariable String userId,
+            @Valid @RequestBody ExpensesRequest request) {
         ExpensesResponse response = expensesService.save(userId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{userId}/expenses/{id}")
-    public ResponseEntity<ExpensesResponse> update(@PathVariable String userId, @PathVariable String id, @RequestBody ExpensesRequest request) {
+    public ResponseEntity<ExpensesResponse> update(@PathVariable String userId, @PathVariable String id,
+            @RequestBody ExpensesRequest request) {
         ExpensesResponse response = expensesService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
