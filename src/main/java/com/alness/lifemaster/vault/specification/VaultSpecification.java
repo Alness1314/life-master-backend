@@ -17,6 +17,7 @@ import jakarta.persistence.criteria.Root;
 
 public class VaultSpecification implements Specification<VaultEntity> {
 
+    @SuppressWarnings("null")
     @Override
     public Predicate toPredicate(Root<VaultEntity> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
         return null;
@@ -30,8 +31,8 @@ public class VaultSpecification implements Specification<VaultEntity> {
                 case "id":
                     specification = specification.and(this.filterById(entry.getValue()));
                     break;
-                case "source":
-                    specification = specification.and(this.filterBySource(entry.getValue()));
+                case "site":
+                    specification = specification.and(this.filterBySite(entry.getValue()));
                     break;
                 case "user":
                     specification = specification.and(this.filterByUser(entry.getValue()));
@@ -54,8 +55,8 @@ public class VaultSpecification implements Specification<VaultEntity> {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
 
-    private Specification<VaultEntity> filterBySource(String source) {
-        return (root, query, cb) -> cb.equal(root.<String>get("source"), source);
+    private Specification<VaultEntity> filterBySite(String siteName) {
+        return (root, query, cb) -> cb.equal(root.<String>get("siteName"), siteName);
 
     }
     

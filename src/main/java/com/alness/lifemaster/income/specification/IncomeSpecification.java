@@ -17,6 +17,7 @@ import jakarta.persistence.criteria.Root;
 
 public class IncomeSpecification implements Specification<IncomeEntity> {
 
+    @SuppressWarnings("null")
     @Override
     public Predicate toPredicate(Root<IncomeEntity> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
         return null;

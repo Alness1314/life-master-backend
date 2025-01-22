@@ -15,6 +15,7 @@ import jakarta.persistence.criteria.Root;
 
 public class CategorySpecification implements Specification<CategoryEntity>{
 
+    @SuppressWarnings("null")
     @Override
     public Predicate toPredicate(Root<CategoryEntity> arg0, CriteriaQuery<?> arg1, CriteriaBuilder arg2) {
         return null;

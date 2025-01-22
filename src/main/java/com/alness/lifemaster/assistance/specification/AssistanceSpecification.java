@@ -17,6 +17,7 @@ import jakarta.persistence.criteria.Root;
 
 public class AssistanceSpecification implements Specification<AssistanceEntity>{
 
+    @SuppressWarnings("null")
     @Override
     public Predicate toPredicate(Root<AssistanceEntity> arg0, CriteriaQuery<?> arg1, CriteriaBuilder arg2) {
         return null;

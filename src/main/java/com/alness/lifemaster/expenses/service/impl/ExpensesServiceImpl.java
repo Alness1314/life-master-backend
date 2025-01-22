@@ -87,8 +87,9 @@ public class ExpensesServiceImpl implements ExpensesService {
 
     @Override
     public ExpensesResponse findOne(String userId, String id) {
-        ExpensesEntity expenses = expensesRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "Expenses not found."));
+        ExpensesEntity expenses = expensesRepository.findOne(filterWithParameters(Map.of("id", id, "user", userId)))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        "Expenses not found."));
         return mapperDto(expenses);
     }
 
@@ -96,17 +97,20 @@ public class ExpensesServiceImpl implements ExpensesService {
     public ExpensesResponse save(String userId, ExpensesRequest request) {
         ExpensesEntity expenses = mapper.map(request, ExpensesEntity.class);
         UserEntity user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "User not found."));
+                .orElseThrow(
+                        () -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "User not found."));
         expenses.setUser(user);
         CategoryEntity category = categoryRepository.findById(UUID.fromString(request.getCategory()))
-                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "category not found."));
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        "category not found."));
         expenses.setCategory(category);
         try {
             expenses = expensesRepository.save(expenses);
         } catch (Exception e) {
             log.error("Error to save expenses {}", e.getMessage());
             e.printStackTrace();
-            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR, "Error to save expenses.");
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error to save expenses.");
         }
         return mapperDto(expenses);
     }

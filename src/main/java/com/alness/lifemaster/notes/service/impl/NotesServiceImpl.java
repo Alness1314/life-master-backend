@@ -1,9 +1,8 @@
-package com.alness.lifemaster.vault.service.impl;
+package com.alness.lifemaster.notes.service.impl;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -14,25 +13,24 @@ import org.springframework.stereotype.Service;
 
 import com.alness.lifemaster.common.dto.ResponseDto;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.notes.dto.request.NotesRequest;
+import com.alness.lifemaster.notes.dto.response.NotesResponse;
+import com.alness.lifemaster.notes.entity.NotesEntity;
+import com.alness.lifemaster.notes.repository.NotesRepository;
+import com.alness.lifemaster.notes.service.NotesService;
+import com.alness.lifemaster.notes.specification.NotesSpecification;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
-import com.alness.lifemaster.vault.dto.request.VaultRequest;
-import com.alness.lifemaster.vault.dto.response.VaultResponse;
-import com.alness.lifemaster.vault.entity.VaultEntity;
-import com.alness.lifemaster.vault.repository.VaultRepository;
-import com.alness.lifemaster.vault.service.VaultService;
-import com.alness.lifemaster.vault.specification.VaultSpecification;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class VaultServiceImpl implements VaultService {
-
+public class NotesServiceImpl implements NotesService {
     @Autowired
-    private VaultRepository vaultRepository;
+    private NotesRepository notesRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -52,43 +50,41 @@ public class VaultServiceImpl implements VaultService {
     }
 
     @Override
-    public List<VaultResponse> find(String userId, Map<String, String> params) {
+    public List<NotesResponse> find(String userId, Map<String, String> params) {
         params.put("user", userId);
-        Specification<VaultEntity> specification = filterWithParameters(params);
-        return vaultRepository.findAll(specification)
-                .stream()
+        return notesRepository.findAll(filterWithParameters(params)).stream()
                 .map(this::mapperDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
-    public VaultResponse findOne(String userId, String id) {
-        VaultEntity vault = vaultRepository.findOne(filterWithParameters(Map.of("id", id, "user", userId)))
+    public NotesResponse findOne(String userId, String id) {
+        NotesEntity note = notesRepository.findOne(filterWithParameters(Map.of("id", id, "user", userId)))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "Income not found."));
-        return mapperDto(vault);
+                        "Notes not found."));
+        return mapperDto(note);
     }
 
     @Override
-    public VaultResponse save(String userId, VaultRequest request) {
-        VaultEntity vault = mapper.map(request, VaultEntity.class);
+    public NotesResponse save(String userId, NotesRequest request) {
+        NotesEntity newNote = mapper.map(request, NotesEntity.class);
         UserEntity user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(
                         () -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "User not found."));
-        vault.setUser(user);
+        newNote.setUser(user);
         try {
-            vault = vaultRepository.save(vault);
+            newNote = notesRepository.save(newNote);
         } catch (Exception e) {
-            log.error("Error to save income {}", e.getMessage());
+            log.error("Error to save note {}", e.getMessage());
             e.printStackTrace();
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error to save invome.");
+                    "Error to save note.");
         }
-        return mapperDto(vault);
+        return mapperDto(newNote);
     }
 
     @Override
-    public VaultResponse update(String userId, String id, VaultRequest request) {
+    public NotesResponse update(String userId, String id, NotesRequest request) {
         throw new UnsupportedOperationException("Unimplemented method 'update'");
     }
 
@@ -97,12 +93,11 @@ public class VaultServiceImpl implements VaultService {
         throw new UnsupportedOperationException("Unimplemented method 'delete'");
     }
 
-    private VaultResponse mapperDto(VaultEntity source) {
-        return mapper.map(source, VaultResponse.class);
+    private NotesResponse mapperDto(NotesEntity source) {
+        return mapper.map(source, NotesResponse.class);
     }
 
-    public Specification<VaultEntity> filterWithParameters(Map<String, String> parameters) {
-        return new VaultSpecification().getSpecificationByFilters(parameters);
+    public Specification<NotesEntity> filterWithParameters(Map<String, String> params) {
+        return new NotesSpecification().getSpecificationByFilters(params);
     }
-
 }
