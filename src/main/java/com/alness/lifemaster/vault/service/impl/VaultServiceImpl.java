@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.crypto.SecretKey;
+
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
+import com.alness.lifemaster.utils.TextEncrypterUtil;
 import com.alness.lifemaster.vault.dto.request.VaultRequest;
 import com.alness.lifemaster.vault.dto.response.VaultResponse;
 import com.alness.lifemaster.vault.entity.VaultEntity;
@@ -77,6 +80,9 @@ public class VaultServiceImpl implements VaultService {
                         () -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "User not found."));
         vault.setUser(user);
         try {
+            Map<String, String> params = secureIn(vault.getPasswordEncrypted());
+            vault.setPasswordEncrypted(params.get("encode"));
+            vault.setKey(params.get("key"));
             vault = vaultRepository.save(vault);
         } catch (Exception e) {
             log.error("Error to save income {}", e.getMessage());
@@ -85,6 +91,14 @@ public class VaultServiceImpl implements VaultService {
                     "Error to save invome.");
         }
         return mapperDto(vault);
+    }
+
+    private Map<String, String> secureIn(String password){
+        SecretKey key = TextEncrypterUtil.generateKey();
+        String passwordEncode = TextEncrypterUtil.encrypt(password, key);
+        String ivKey = TextEncrypterUtil.keyToString(key);
+
+        return Map.of("encode", passwordEncode, "key", ivKey);
     }
 
     @Override

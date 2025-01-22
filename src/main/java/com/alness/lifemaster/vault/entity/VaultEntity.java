@@ -28,13 +28,13 @@ public class VaultEntity {
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "site_name", nullable = false, columnDefinition = "varchar(128)")
+    @Column(name = "site_name", nullable = false, columnDefinition = "character varying(128)")
     private String siteName;
 
-    @Column(name = "site_url", nullable = true, columnDefinition = "varchar(256)")
+    @Column(name = "site_url", nullable = true, columnDefinition = "character varying(256)")
     private String siteUrl;
 
-    @Column(name = "username", nullable = true, columnDefinition = "varchar(128)")
+    @Column(name = "username", nullable = true, columnDefinition = "character varying(128)")
     private String username;
 
     @Column(name = "password_encrypted", nullable = true, columnDefinition = "text")
@@ -42,6 +42,9 @@ public class VaultEntity {
 
     @Column(name = "notes", columnDefinition = "text")
     private String notes;
+
+    @Column(name = "custom_key", columnDefinition = "character varying(256)")
+    private String key;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)

@@ -28,7 +28,7 @@ public class NotesEntity {
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "title", nullable = true, columnDefinition = "varchar(128)")
+    @Column(name = "title", nullable = true, columnDefinition = "character varying(128)")
     private String title;
 
     @Column(name = "content", nullable = true, columnDefinition = "text")
