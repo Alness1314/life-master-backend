@@ -67,6 +67,7 @@ public class SpringSecurityConfig {
     private static final String[] WHITE_LIST_URLS = {
             "/swagger-ui/**",
             "/api-docs/**",
+            "/"
     };
 
     @Bean
