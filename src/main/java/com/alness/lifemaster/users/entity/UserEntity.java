@@ -38,6 +38,12 @@ public class UserEntity {
 
     @Column(nullable = false, columnDefinition = "character varying(128)")
     private String password;
+    
+    @Column(name = "full_name", nullable = false, columnDefinition = "character varying(256)")
+    private String fullName;
+
+    @Column(name = "image_id", nullable = true, columnDefinition = "uuid")
+    private UUID imageId;
 
     @Column(nullable = false, columnDefinition = "boolean")
     private Boolean verified;

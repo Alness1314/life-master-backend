@@ -16,5 +16,7 @@ import lombok.Setter;
 public class UserRequest {
     private String username;
     private String password;
+    private String fullName;
+    private String imageId;
     private List<String> profiles;
 }

@@ -21,6 +21,8 @@ public class UserResponse {
     private UUID id;
     private String username;
     private String password;
+    private String fullName;
+    private String imageId;
     private List<ProfileResponse> profiles;
     private Boolean verified;
     private Boolean erased;   
