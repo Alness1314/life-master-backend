@@ -23,7 +23,7 @@ public class UserSpecification implements Specification<UserEntity>{
     }
     
     public Specification<UserEntity> getSpecificationByFilters(Map<String, String> params){
-        Specification<UserEntity> specification = Specification.where(null);
+        Specification<UserEntity> specification = Specification.where(this.filterByErased("false"));
         for (Entry<String, String> entry : params.entrySet()) {
             switch (entry.getKey()) {
                 case "id":
@@ -33,7 +33,7 @@ public class UserSpecification implements Specification<UserEntity>{
                     specification = specification.and(this.filterByUsername(entry.getValue()));
                     break;
                 case "erased":
-                    specification = specification.and(this.filterByEnable(entry.getValue()));
+                    specification = specification.and(this.filterByErased(entry.getValue()));
                     break;
                 default:
                     break;
@@ -51,7 +51,7 @@ public class UserSpecification implements Specification<UserEntity>{
         
     }
 
-    private Specification<UserEntity> filterByEnable(String enabled) {
+    private Specification<UserEntity> filterByErased(String enabled) {
         return (root, query, cb) -> cb.equal(root.<Boolean>get("erased"), Boolean.parseBoolean(enabled));
     }
 }

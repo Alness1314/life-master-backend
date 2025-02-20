@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -57,15 +58,23 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserResponse save(UserRequest request) {
+        if(request.getImageId().isEmpty()){
+            request.setImageId(null);
+        }
         UserEntity newUser = modelMapper.map(request, UserEntity.class);
         try {
             List<ProfileEntity> profiles = new ArrayList<>();
             for (String profileName : request.getProfiles()) {
-                ProfileEntity profile = profileRepository.findByName(profileName).orElse(null);
+                ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName)).orElse(null);
                 profiles.add(profile);
             }
             newUser.setProfiles(profiles);
             newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            if(request.getImageId()!=null && !request.getImageId().isEmpty()){
+                //logica para buscar la imagen
+            }else{
+                newUser.setId(null);
+            }
             newUser = userRepository.save(newUser);
             return mapperDto(newUser);
         } catch (DataIntegrityViolationException ex) {
@@ -78,6 +87,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         } catch (ResponseStatusException ex) {
             throw ex; // Re-lanzar excepciones ya gestionadas
         } catch (Exception ex) {
+            ex.printStackTrace();
             log.error("Error to save user", ex);
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", ex);
@@ -104,7 +114,17 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public ResponseDto delete(String id) {
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        UserEntity findUser = userRepository.findOne(filterWithParameters(Map.of(Filters.KEY_ID, id)))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "resource not found"));
+        try {
+            findUser.setErased(true);
+            userRepository.save(findUser);
+            return new ResponseDto("The user was successfully deleted", HttpStatus.OK, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("error to delete ", e);
+            return new ResponseDto("The user could not be deleted", HttpStatus.CONFLICT, false);
+        }
     }
 
     private UserResponse mapperDto(UserEntity source) {

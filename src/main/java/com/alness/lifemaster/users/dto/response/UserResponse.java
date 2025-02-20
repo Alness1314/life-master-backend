@@ -22,7 +22,7 @@ public class UserResponse {
     private String username;
     private String password;
     private String fullName;
-    private String imageId;
+    private UUID imageId;
     private List<ProfileResponse> profiles;
     private Boolean verified;
     private Boolean erased;   
