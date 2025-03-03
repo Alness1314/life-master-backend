@@ -1,12 +1,18 @@
 package com.alness.lifemaster.app.service.impl;
 
 import java.util.Collections;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.alness.lifemaster.app.dto.JwtDto;
+import com.alness.lifemaster.app.dto.ResponseServer;
 import com.alness.lifemaster.app.service.AppConfigService;
+import com.alness.lifemaster.app.service.DecodeJwtService;
+import com.alness.lifemaster.auth.dto.KeyPrefix;
 import com.alness.lifemaster.common.dto.ResponseDto;
 import com.alness.lifemaster.common.enums.AllowedProfiles;
 import com.alness.lifemaster.profiles.dto.request.ProfileRequest;
@@ -16,6 +22,7 @@ import com.alness.lifemaster.users.dto.request.UserRequest;
 import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -27,6 +34,9 @@ public class AppConfigServiceImpl implements AppConfigService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private DecodeJwtService jwtService;
+
     @Override
     public ResponseDto createDefaultValues() {
         boolean resultAdmin = createProfile(AllowedProfiles.ADMIN.getName());
@@ -34,7 +44,8 @@ public class AppConfigServiceImpl implements AppConfigService {
         boolean resultUser = createProfile(AllowedProfiles.USER.getName());
         String profile = AllowedProfiles.ADMIN.getName();
         boolean resultDefaultUser = createUser(
-                new UserRequest("administrator@gmail.com", "admin025#","Technical Support",null, Collections.singletonList(profile)));
+                new UserRequest("administrator@gmail.com", "admin025#", "Technical Support", null,
+                        Collections.singletonList(profile)));
 
         if (resultAdmin && resultEmployee && resultUser && resultDefaultUser) {
             return new ResponseDto("All profiles were created successfully.", HttpStatus.OK, true);
@@ -83,5 +94,30 @@ public class AppConfigServiceImpl implements AppConfigService {
                     String.format("The user with the username: [%s] created successfully.", userDefault.getUsername()));
             return saveUser(userDefault);
         }
+    }
+
+    @Override
+    public ResponseServer checkStatusSession(HttpServletRequest request) {
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (header == null || !header.startsWith(KeyPrefix.PREFIX_TOKEN)) {
+            return new ResponseServer("Sesión no válida o expirada.", null, false, HttpStatus.UNAUTHORIZED);
+        }
+
+        String token = header.substring(KeyPrefix.PREFIX_TOKEN.length()).trim();
+
+        if (Boolean.FALSE.equals(jwtService.isValidToken(token))) {
+            return new ResponseServer("Sesión no válida o expirada.", null, false, HttpStatus.UNAUTHORIZED);
+        }
+
+        JwtDto jwtDto = jwtService.decodeJwt(token);
+        UserResponse user = userService.findByUsername(jwtDto.getBody().getSub());
+
+        if (user == null) {
+            return new ResponseServer("El usuario no fue encontrado.", Map.of(), false, HttpStatus.NOT_FOUND);
+        }
+        Map<String, Object> data = Map.of("id", user.getId(), "username", user.getUsername(), "token", token);
+
+        return new ResponseServer("Sesión válida.", data, true, HttpStatus.ACCEPTED);
     }
 }
