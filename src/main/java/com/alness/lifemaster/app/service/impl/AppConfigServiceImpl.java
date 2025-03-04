@@ -42,10 +42,12 @@ public class AppConfigServiceImpl implements AppConfigService {
         boolean resultAdmin = createProfile(AllowedProfiles.ADMIN.getName());
         boolean resultEmployee = createProfile(AllowedProfiles.EMPLOYEE.getName());
         boolean resultUser = createProfile(AllowedProfiles.USER.getName());
-        String profile = AllowedProfiles.ADMIN.getName();
+
+        ProfileResponse profileResp = profileService.findByName(AllowedProfiles.ADMIN.getName());
+
         boolean resultDefaultUser = createUser(
                 new UserRequest("administrator@gmail.com", "admin025#", "Technical Support", null,
-                        Collections.singletonList(profile)));
+                        Collections.singletonList(profileResp.getId().toString())));
 
         if (resultAdmin && resultEmployee && resultUser && resultDefaultUser) {
             return new ResponseDto("All profiles were created successfully.", HttpStatus.OK, true);

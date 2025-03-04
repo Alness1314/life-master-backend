@@ -58,9 +58,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserResponse save(UserRequest request) {
-        if(request.getImageId().isEmpty()){
-            request.setImageId(null);
-        }
         UserEntity newUser = modelMapper.map(request, UserEntity.class);
         try {
             List<ProfileEntity> profiles = new ArrayList<>();
