@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.dto.request.ModuleRequest;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.modules.service.ModuleService;
@@ -49,6 +50,12 @@ public class ModulesController {
     @PatchMapping()
     public ResponseEntity<ModuleResponse> asignmodule(@RequestParam String parentModuleId, @RequestParam String childModuleId) {
         ModuleResponse response = moduleService.assignChildToParent(parentModuleId, childModuleId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ModuleDto>> find(@RequestParam Map<String, String> param) {
+        List<ModuleDto> response = moduleService.find(param);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
     

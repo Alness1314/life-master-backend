@@ -1,20 +1,24 @@
 package com.alness.lifemaster.modules.service.impl;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.dto.request.ModuleRequest;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.modules.repository.ModuleRepository;
 import com.alness.lifemaster.modules.service.ModuleService;
+import com.alness.lifemaster.modules.specification.ModuleSpecification;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 
@@ -36,7 +40,7 @@ public class ModuleServiceImpl implements ModuleService {
         ModuleEntity newModule = modelMapper.map(module, ModuleEntity.class);
         try {
             for (String profileName : module.getProfile()) {
-                ProfileEntity profile = profileRepository.findByName(profileName).orElse(null);
+                ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName)).orElse(null);
                 log.info("profile: {}", profile);
 
                 if (profile != null) {
@@ -110,6 +114,21 @@ public class ModuleServiceImpl implements ModuleService {
                 .erased(module.getErased())
                 .children(module.getChildren().stream().map(this::convertToDto).toList())
                 .build();
+    }
+
+    @Override
+    public List<ModuleDto> find(Map<String, String> params) {
+        return moduleRepository.findAll(filterWithParameters(params))
+        .stream().map(this::mapperModules)
+        .toList();    
+    }
+
+    public ModuleDto mapperModules(ModuleEntity module) {
+        return modelMapper.map(module, ModuleDto.class);
+    }
+
+    public Specification<ModuleEntity> filterWithParameters(Map<String, String> parameters) {
+        return new ModuleSpecification().getSpecificationByFilters(parameters);
     }
 
 }
