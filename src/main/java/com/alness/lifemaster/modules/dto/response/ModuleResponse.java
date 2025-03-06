@@ -20,6 +20,8 @@ public class ModuleResponse {
     private String route;
     private String iconName;
     private Boolean erased;
+    private String level;
+    private String description;
     private Boolean isParent;
     private List<ModuleResponse> children;
 }

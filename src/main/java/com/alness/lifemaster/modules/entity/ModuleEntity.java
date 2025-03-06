@@ -52,6 +52,9 @@ public class ModuleEntity {
     @Column(name = "level")
     private String level;
 
+    @Column(name = "description")
+    private String description;
+
     // Relación de auto-referencia para representar la jerarquía de módulos (padre e
     // hijos)
     @ManyToOne(fetch = FetchType.LAZY)

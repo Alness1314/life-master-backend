@@ -12,13 +12,13 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class ModuleDto {
-     private String id;
+    private String id;
     private String name;
     private String route;
     private String iconName;
+    private String level;
     private String description;
     private Boolean erased;
     private Boolean isParent;
-    private String level;
-    private String parentId;
+    
 }

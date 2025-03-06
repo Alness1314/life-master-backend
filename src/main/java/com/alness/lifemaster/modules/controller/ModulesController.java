@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.alness.lifemaster.app.dto.ResponseServer;
 import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.dto.request.ModuleRequest;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
@@ -44,6 +45,12 @@ public class ModulesController {
     @PostMapping
     public ResponseEntity<ModuleResponse> create(@RequestBody ModuleRequest request) {
         ModuleResponse response = moduleService.createModule(request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PostMapping("/all")
+    public ResponseEntity<ResponseServer> createAll(@RequestBody List<ModuleRequest> request) {
+        ResponseServer response = moduleService.multiSave(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

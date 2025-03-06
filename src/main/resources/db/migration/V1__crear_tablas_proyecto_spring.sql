@@ -150,6 +150,7 @@ CREATE TABLE public.modules (
 	"route" varchar(255) NOT NULL,
 	icon_name varchar(255) NULL,
 	"level" varchar(255) NULL,
+	"description" varchar(255) NULL,
 	is_parent bool NOT NULL,
 	parent_id uuid NULL,
 	erased bool NOT NULL,

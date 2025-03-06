@@ -17,6 +17,8 @@ public class ModuleRequest {
     private String name;
     private String route;
     private String iconName;
+    private String level;
+    private String description;
     private Boolean isParent;
     private List<String> profile;
 }

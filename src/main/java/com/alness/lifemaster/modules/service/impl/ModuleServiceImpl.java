@@ -1,5 +1,6 @@
 package com.alness.lifemaster.modules.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.alness.lifemaster.app.dto.ResponseServer;
 import com.alness.lifemaster.common.dto.ResponseDto;
 import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.dto.request.ModuleRequest;
@@ -119,8 +121,8 @@ public class ModuleServiceImpl implements ModuleService {
     @Override
     public List<ModuleDto> find(Map<String, String> params) {
         return moduleRepository.findAll(filterWithParameters(params))
-        .stream().map(this::mapperModules)
-        .toList();    
+                .stream().map(this::mapperModules)
+                .toList();
     }
 
     public ModuleDto mapperModules(ModuleEntity module) {
@@ -129,6 +131,20 @@ public class ModuleServiceImpl implements ModuleService {
 
     public Specification<ModuleEntity> filterWithParameters(Map<String, String> parameters) {
         return new ModuleSpecification().getSpecificationByFilters(parameters);
+    }
+
+    @Override
+    public ResponseServer multiSave(List<ModuleRequest> modules) {
+        List<Map<String, Object>> response = new ArrayList<>();
+        modules.forEach(item -> {
+            ModuleResponse resp = createModule(item);
+            if (resp != null) {
+                response.add(Map.of("module", resp.getName(), "status", true));
+            } else {
+                response.add(Map.of("module", item.getName(), "status", false));
+            }
+        });
+        return new ResponseServer("Modulos creados", Map.of("data", response), true, HttpStatus.ACCEPTED);
     }
 
 }

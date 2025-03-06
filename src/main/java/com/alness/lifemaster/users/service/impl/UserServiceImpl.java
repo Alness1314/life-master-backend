@@ -67,9 +67,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             }
             newUser.setProfiles(profiles);
             newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-            if(request.getImageId()!=null && !request.getImageId().isEmpty()){
-                //logica para buscar la imagen
-            }else{
+            if (request.getImageId() != null && !request.getImageId().isEmpty()) {
+                // logica para buscar la imagen
+            } else {
                 newUser.setId(null);
             }
             newUser = userRepository.save(newUser);
@@ -106,7 +106,56 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserResponse update(String id, UserRequest request) {
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        try {
+            // Buscar el usuario existente por su ID
+            UserEntity existingUser = userRepository.findById(UUID.fromString(id))
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "User not found with id: " + id));
+
+            // Actualizar los campos del usuario existente con los valores de la solicitud
+            modelMapper.map(request, existingUser);
+
+            // Actualizar los perfiles del usuario
+            List<ProfileEntity> profiles = new ArrayList<>();
+            for (String profileName : request.getProfiles()) {
+                ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName))
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Profile not found with id: " + profileName));
+                profiles.add(profile);
+            }
+            existingUser.setProfiles(profiles);
+
+            // Si se proporciona una nueva contraseña, codificarla y actualizarla
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            }
+
+            // Lógica para manejar la imagen (si es necesario)
+            if (request.getImageId() != null && !request.getImageId().isEmpty()) {
+                // Lógica para buscar y actualizar la imagen
+            }
+
+            // Guardar los cambios en la base de datos
+            existingUser = userRepository.save(existingUser);
+
+            // Mapear y devolver la respuesta
+            return mapperDto(existingUser);
+
+        } catch (DataIntegrityViolationException ex) {
+            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "Username already exists: " + request.getUsername(), ex);
+            }
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Data integrity violation", ex);
+        } catch (ResponseStatusException ex) {
+            throw ex; // Re-lanzar excepciones ya gestionadas
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            log.error("Error to update user", ex);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", ex);
+        }
     }
 
     @Override

@@ -34,9 +34,9 @@ public class AssistanceSpecification implements Specification<AssistanceEntity>{
                 case "user":
                     specification = specification.and(this.filterByUser(entry.getValue()));
                     break;
-                case "erased":
-                    specification = specification.and(this.filterByEnable(entry.getValue()));
-                    break;
+                //case "erased":
+                    //specification = specification.and(this.filterByEnable(entry.getValue()));
+                    //break;
                 default:
                     break;
             }
@@ -56,7 +56,7 @@ public class AssistanceSpecification implements Specification<AssistanceEntity>{
         }; 
     }
 
-    private Specification<AssistanceEntity> filterByEnable(String enabled) {
-        return (root, query, cb) -> cb.equal(root.<Boolean>get("erased"), Boolean.parseBoolean(enabled));
-    }
+    //private Specification<AssistanceEntity> filterByEnable(String enabled) {
+        //return (root, query, cb) -> cb.equal(root.<Boolean>get("erased"), Boolean.parseBoolean(enabled));
+    //}
 }
