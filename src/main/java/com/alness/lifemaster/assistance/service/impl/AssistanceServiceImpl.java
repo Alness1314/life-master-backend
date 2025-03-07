@@ -139,7 +139,19 @@ public class AssistanceServiceImpl implements AssistanceService {
 
     @Override
     public ResponseDto delete(String userId, String id) {
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        AssistanceEntity assistance = assistanceRepository
+                .findOne(filterWithParameters(Map.of("user", userId, "id", id)))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        "Entity not found"));
+
+        try {
+            assistanceRepository.delete(assistance);
+            return new ResponseDto("Registro de asistencia eliminado", HttpStatus.OK, true);
+        } catch (Exception e) {
+            log.error("error al borrar registro asistencia", e);
+            return new ResponseDto("No se pudo eliminar el registro de asistencia", HttpStatus.METHOD_NOT_ALLOWED,
+                    false);
+        }
     }
 
     private AssistanceResponse mapperDto(AssistanceEntity source) {

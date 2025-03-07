@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alness.lifemaster.assistance.dto.request.AssistanceRequest;
 import com.alness.lifemaster.assistance.dto.response.AssistanceResponse;
 import com.alness.lifemaster.assistance.service.AssistanceService;
+import com.alness.lifemaster.common.dto.ResponseDto;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -45,6 +47,13 @@ public class AssistanceController {
     public ResponseEntity<AssistanceResponse> postMethodName(@PathVariable String userId,
             @RequestBody AssistanceRequest request) {
         AssistanceResponse response = assistanceService.save(userId, request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{userId}/assistance/{id}")
+    public ResponseEntity<ResponseDto> postMethodName(@PathVariable String userId,
+            @PathVariable String id) {
+        ResponseDto response = assistanceService.delete(userId, id);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
