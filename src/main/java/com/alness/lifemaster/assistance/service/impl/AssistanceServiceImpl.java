@@ -134,7 +134,39 @@ public class AssistanceServiceImpl implements AssistanceService {
 
     @Override
     public AssistanceResponse update(String userId, String id, AssistanceRequest request) {
-        throw new UnsupportedOperationException("Unimplemented method 'save'");
+        // Buscar al usuario por su ID
+        UserEntity user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format("user with id %s not found.", userId)));
+
+        try {
+            // Buscar la asistencia existente por su ID
+            AssistanceEntity existingAssistance = assistanceRepository.findById(UUID.fromString(id))
+                    .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                            String.format("assistance with id %s not found.", id)));
+
+            // Verificar que la asistencia pertenece al usuario
+            if (!existingAssistance.getUser().getId().equals(user.getId())) {
+                throw new RestExceptionHandler(ApiCodes.API_CODE_403, HttpStatus.FORBIDDEN,
+                        String.format("User with id %s is not allowed to update this assistance.", userId));
+            }
+
+            // Mapear los datos de la solicitud a la entidad de asistencia
+            modelMapper.map(request, existingAssistance); // Esto actualizará los valores del objeto existingAssistance
+
+            // Establecer el usuario en la entidad (por si hubo cambios en el request)
+            existingAssistance.setUser(user);
+
+            // Guardar la asistencia actualizada en la base de datos
+            existingAssistance = assistanceRepository.save(existingAssistance);
+
+            // Retornar la respuesta de la asistencia actualizada
+            return mapperDto(existingAssistance);
+        } catch (Exception e) {
+            log.error("Error {}", e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error to update assistance");
+        }
     }
 
     @Override

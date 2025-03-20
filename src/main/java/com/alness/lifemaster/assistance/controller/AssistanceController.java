@@ -22,6 +22,7 @@ import com.alness.lifemaster.assistance.service.AssistanceService;
 import com.alness.lifemaster.common.dto.ResponseDto;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("${api.prefix}/usuarios")
@@ -47,6 +48,13 @@ public class AssistanceController {
     public ResponseEntity<AssistanceResponse> postMethodName(@PathVariable String userId,
             @RequestBody AssistanceRequest request) {
         AssistanceResponse response = assistanceService.save(userId, request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PutMapping("/{userId}/assistance/{id}")
+    public ResponseEntity<AssistanceResponse> putMethodName(@PathVariable String userId,
+            @PathVariable String id, @RequestBody AssistanceRequest request) {
+        AssistanceResponse response = assistanceService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
