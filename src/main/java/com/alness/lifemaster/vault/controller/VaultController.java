@@ -47,7 +47,7 @@ public class VaultController {
     @PostMapping("/{userId}/vault")
     public ResponseEntity<VaultResponse> save(@PathVariable String userId, @Valid @RequestBody VaultRequest request) {
         VaultResponse response = vaultService.save(userId, request);
-        return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{userId}/vault/{id}")

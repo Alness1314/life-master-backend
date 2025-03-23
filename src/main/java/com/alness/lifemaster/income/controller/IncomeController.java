@@ -47,7 +47,7 @@ public class IncomeController {
     @PostMapping("/{userId}/income")
     public ResponseEntity<IncomeResponse> save(@PathVariable String userId, @Valid @RequestBody IncomeRequest request) {
         IncomeResponse response = incomeService.save(userId, request);
-        return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{userId}/income/{id}")

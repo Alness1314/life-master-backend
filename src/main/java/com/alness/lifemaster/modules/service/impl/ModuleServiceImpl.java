@@ -112,6 +112,8 @@ public class ModuleServiceImpl implements ModuleService {
                 .name(module.getName())
                 .route(module.getRoute())
                 .iconName(module.getIconName())
+                .description(module.getDescription())
+                .level(module.getLevel())
                 .isParent(module.getIsParent())
                 .erased(module.getErased())
                 .children(module.getChildren().stream().map(this::convertToDto).toList())

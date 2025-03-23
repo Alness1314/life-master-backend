@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
@@ -82,7 +81,7 @@ public class ExpensesServiceImpl implements ExpensesService {
         return expensesRepository.findAll(specification)
                 .stream()
                 .map(this::mapperDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -122,7 +121,17 @@ public class ExpensesServiceImpl implements ExpensesService {
 
     @Override
     public ResponseDto delete(String userId, String id) {
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        ExpensesEntity expenses = expensesRepository.findOne(
+                filterWithParameters(Map.of("id", id, "user", userId)))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        "Entity expenses not found."));
+        try {
+            expensesRepository.delete(expenses);
+            return new ResponseDto(id, HttpStatus.OK, true);
+        } catch (Exception e) {
+            log.error("Error to delete expenses", e);
+            return new ResponseDto("Error to delete expense", HttpStatus.METHOD_NOT_ALLOWED, false);
+        }
     }
 
     private ExpensesResponse mapperDto(ExpensesEntity expenses) {
