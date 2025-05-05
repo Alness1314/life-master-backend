@@ -25,7 +25,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
-@RequestMapping("${api.prefix}/usuarios")
+@RequestMapping("${api.prefix}/users")
 @Tag(name = "Assistance", description = ".")
 public class AssistanceController {
     @Autowired

@@ -25,7 +25,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("${api.prefix}/usuarios")
+@RequestMapping("${api.prefix}/users")
 @Tag(name = "Notes", description = ".")
 public class NotesController {
     @Autowired

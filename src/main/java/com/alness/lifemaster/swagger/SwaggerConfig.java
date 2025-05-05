@@ -21,7 +21,7 @@ public class SwaggerConfig {
 	public OpenAPI customOpenAPI() {
 		return new OpenAPI()
 				.info(getInfo())
-				.addServersItem(new Server().url("http://localhost:8080").description("Development Server"))
+				.addServersItem(new Server().url("http://localhost:7091").description("Development Server"))
 				.components(createComponents())
 				.addSecurityItem(new SecurityRequirement().addList(SCHEME_NAME));
 	}
