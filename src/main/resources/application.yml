@@ -39,4 +39,8 @@ api:
 
 #secret jwt
 jwt:
-    secret: ItSDaNG3r0UsT06oAl0n3TaK3ThIs2025
+    secret: ${JWT_SECRET}
+
+swg:
+    server:
+        prod: ${SERVER_PROD_URL}
