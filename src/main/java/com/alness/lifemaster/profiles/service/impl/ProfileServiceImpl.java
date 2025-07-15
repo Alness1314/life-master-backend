@@ -7,13 +7,16 @@ import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
+import com.alness.lifemaster.common.messages.Messages;
+import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.profiles.dto.request.ProfileRequest;
@@ -22,6 +25,8 @@ import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.profiles.service.ProfileService;
 import com.alness.lifemaster.profiles.specification.ProfileSpecification;
+import com.alness.lifemaster.utils.ApiCodes;
+import com.alness.lifemaster.utils.LoggerUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,9 +44,14 @@ public class ProfileServiceImpl implements ProfileService {
         try {
             newProfile = profileRepository.save(newProfile);
             return mapperDto(newProfile);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("Error to save profile ", e);
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED);
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    Messages.ERROR_ENTITY_UPDATE);
         }
     }
 
@@ -55,17 +65,52 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public List<ProfileResponse> find(Map<String, String> params) {
         return profileRepository.findAll(filterWithParameters(params))
-                .stream().map(this::mapperDto).toList();
+                .stream()
+                .map(this::mapperDto)
+                .toList();
     }
 
     @Override
     public ProfileResponse update(String id, ProfileRequest request) {
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        ProfileEntity existingProfile = profileRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
+
+        // Mapear datos del request al perfil existente
+        modelMapper.map(request, existingProfile);
+
+        try {
+            existingProfile = profileRepository.save(existingProfile);
+            return mapperDto(existingProfile);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
+        } catch (Exception e) {
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    Messages.ERROR_ENTITY_UPDATE);
+        }
     }
 
     @Override
-    public ResponseDto delete(String id) {
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+    public ResponseServerDto delete(String id) {
+        ProfileEntity profile = profileRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
+
+        try {
+            profileRepository.delete(profile);
+            return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
+        } catch (Exception e) {
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_409, HttpStatus.CONFLICT,
+                    String.format(Messages.ERROR_ENTITY_DELETE, e.getMessage()));
+        }
     }
 
     private ProfileResponse mapperDto(ProfileEntity source) {
@@ -80,18 +125,15 @@ public class ProfileServiceImpl implements ProfileService {
     public ProfileResponse findByName(String name) {
         ProfileEntity profile = profileRepository.findOne(filterWithParameters(Map.of(Filters.KEY_NAME, name)))
                 .orElse(null);
-        if (profile == null) {
-            return null;
-        }
-        return mapperDto(profile);
+        return (profile != null) ? mapperDto(profile) : null;
     }
 
     @Override
     public List<ModuleResponse> getModulesByProfile(String profileId) {
         UUID id = UUID.fromString(profileId);
-        log.info("profile id: {}", id);
         ProfileEntity profile = profileRepository.findByIdWithModules(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, profileId)));
 
         Set<ModuleEntity> allowedModules = profile.getModules();
 

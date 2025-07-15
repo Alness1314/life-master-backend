@@ -12,8 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.alness.lifemaster.app.dto.ResponseServer;
 import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
+import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.dto.request.ModuleRequest;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
@@ -43,14 +44,12 @@ public class ModuleServiceImpl implements ModuleService {
         try {
             for (String profileName : module.getProfile()) {
                 ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName)).orElse(null);
-                log.info("profile: {}", profile);
 
                 if (profile != null) {
                     newModule.getProfiles().add(profile);
                     profile.getModules().add(newModule); // Actualiza el otro lado de la relación
                 }
             }
-            log.info("module to save {}", newModule);
             newModule = moduleRepository.save(newModule);
             return mapperModule(newModule);
         } catch (Exception e) {
@@ -136,17 +135,18 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public ResponseServer multiSave(List<ModuleRequest> modules) {
+    public ResponseServerDto multiSave(List<ModuleRequest> modules) {
         List<Map<String, Object>> response = new ArrayList<>();
         modules.forEach(item -> {
             ModuleResponse resp = createModule(item);
-            if (resp != null) {
-                response.add(Map.of("module", resp.getName(), "status", true));
-            } else {
-                response.add(Map.of("module", item.getName(), "status", false));
-            }
+
+            Boolean status = (resp != null);
+
+            String name = Boolean.TRUE.equals((status)) ? resp.getName() : item.getName(); 
+
+            response.add(Map.of(Filters.KEY_MODULE, name, Filters.KEY_STATUS, status));
         });
-        return new ResponseServer("Modulos creados", Map.of("data", response), true, HttpStatus.ACCEPTED);
+        return new ResponseServerDto("Modulos creados", HttpStatus.ACCEPTED, true, Map.of(Filters.KEY_DATA, response));
     }
 
 }

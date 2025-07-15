@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.notes.dto.request.NotesRequest;
 import com.alness.lifemaster.notes.dto.response.NotesResponse;
 import com.alness.lifemaster.notes.service.NotesService;
@@ -59,8 +59,8 @@ public class NotesController {
     }
 
     @DeleteMapping("/{userId}/notes/{id}")
-    public ResponseEntity<ResponseDto> delete(@PathVariable String userId, @PathVariable String id) {
-        ResponseDto response = notesService.delete(userId, id);
+    public ResponseEntity<ResponseServerDto> delete(@PathVariable String userId, @PathVariable String id) {
+        ResponseServerDto response = notesService.delete(userId, id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 }

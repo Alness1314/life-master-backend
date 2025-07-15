@@ -41,7 +41,7 @@ public class ProfileController {
     }
 
     @PostMapping
-    public ResponseEntity<ProfileResponse> postMethodName(@RequestBody ProfileRequest request) {
+    public ResponseEntity<ProfileResponse> create(@RequestBody ProfileRequest request) {
         ProfileResponse response = profileService.save(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

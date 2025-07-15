@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.income.dto.request.IncomeRequest;
 import com.alness.lifemaster.income.dto.response.IncomeResponse;
 import com.alness.lifemaster.income.service.IncomeService;
@@ -58,8 +58,8 @@ public class IncomeController {
     }
 
     @DeleteMapping("/{userId}/income/{id}")
-    public ResponseEntity<ResponseDto> delete(@PathVariable String userId, @PathVariable String id) {
-        ResponseDto response = incomeService.delete(userId, id);
+    public ResponseEntity<ResponseServerDto> delete(@PathVariable String userId, @PathVariable String id) {
+        ResponseServerDto response = incomeService.delete(userId, id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 }
