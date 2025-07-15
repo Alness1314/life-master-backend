@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.expenses.dto.request.ExpensesRequest;
 import com.alness.lifemaster.expenses.dto.response.ExpensesResponse;
 import com.alness.lifemaster.expenses.service.ExpensesService;
@@ -59,8 +59,8 @@ public class ExpensesController {
     }
 
     @DeleteMapping("/{userId}/expenses/{id}")
-    public ResponseEntity<ResponseDto> delete(@PathVariable String userId, @PathVariable String id) {
-        ResponseDto response = expensesService.delete(userId, id);
+    public ResponseEntity<ResponseServerDto> delete(@PathVariable String userId, @PathVariable String id) {
+        ResponseServerDto response = expensesService.delete(userId, id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 }

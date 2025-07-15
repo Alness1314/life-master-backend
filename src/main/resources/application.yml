@@ -43,4 +43,5 @@ jwt:
 
 swg:
     server:
-        prod: ${SERVER_PROD_URL}
+        url: ${SERVER_URL}
+        description: ${SERVER_DESCRIPTION}

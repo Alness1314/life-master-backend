@@ -9,6 +9,7 @@ public class ApiCodes {
     public static final String API_CODE_401 = "AP-401";
     public static final String API_CODE_403 = "AP-403";
     public static final String API_CODE_404 = "AP-404";
+    public static final String API_CODE_409 = "AP-409";
     public static final String API_CODE_500 = "AP-500";
 
     private ApiCodes() {

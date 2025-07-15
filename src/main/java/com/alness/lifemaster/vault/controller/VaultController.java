@@ -26,7 +26,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
-@Tag(name = "vault", description = ".")
+@Tag(name = "Vault", description = ".")
 public class VaultController {
     @Autowired
     private VaultService vaultService;

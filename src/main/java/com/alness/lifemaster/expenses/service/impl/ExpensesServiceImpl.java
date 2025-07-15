@@ -11,13 +11,16 @@ import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.alness.lifemaster.categories.entity.CategoryEntity;
 import com.alness.lifemaster.categories.repository.CategoryRepository;
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
+import com.alness.lifemaster.common.keys.Filters;
+import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.expenses.dto.request.ExpensesRequest;
 import com.alness.lifemaster.expenses.dto.response.ExpensesResponse;
@@ -29,6 +32,8 @@ import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.DateTimeUtils;
+import com.alness.lifemaster.utils.FuncUtils;
+import com.alness.lifemaster.utils.LoggerUtil;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -76,8 +81,7 @@ public class ExpensesServiceImpl implements ExpensesService {
 
     @Override
     public List<ExpensesResponse> find(String userId, Map<String, String> params) {
-        params.put("user", userId);
-        Specification<ExpensesEntity> specification = filterWithParameters(params);
+        Specification<ExpensesEntity> specification = filterWithParameters(FuncUtils.integrateUser(userId, params));
         return expensesRepository.findAll(specification)
                 .stream()
                 .map(this::mapperDto)
@@ -86,9 +90,10 @@ public class ExpensesServiceImpl implements ExpensesService {
 
     @Override
     public ExpensesResponse findOne(String userId, String id) {
-        ExpensesEntity expenses = expensesRepository.findOne(filterWithParameters(Map.of("id", id, "user", userId)))
+        ExpensesEntity expenses = expensesRepository
+                .findOne(filterWithParameters(Map.of(Filters.KEY_ID, id, Filters.KEY_USER, userId)))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "Expenses not found."));
+                        String.format(Messages.NOT_FOUND, id)));
         return mapperDto(expenses);
     }
 
@@ -97,40 +102,84 @@ public class ExpensesServiceImpl implements ExpensesService {
         ExpensesEntity expenses = mapper.map(request, ExpensesEntity.class);
         UserEntity user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(
-                        () -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "User not found."));
+                        () -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                                String.format(Messages.NOT_FOUND, userId)));
         expenses.setUser(user);
         CategoryEntity category = categoryRepository.findById(UUID.fromString(request.getCategory()))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "category not found."));
+                        String.format(Messages.NOT_FOUND, request.getCategory())));
         expenses.setCategory(category);
         try {
             expenses = expensesRepository.save(expenses);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("Error to save expenses {}", e.getMessage());
-            e.printStackTrace();
+            LoggerUtil.logError(e);
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error to save expenses.");
+                    Messages.ERROR_ENTITY_UPDATE);
         }
         return mapperDto(expenses);
     }
 
     @Override
     public ExpensesResponse update(String userId, String id, ExpensesRequest request) {
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        try {
+            // Buscar gasto existente
+            ExpensesEntity existingExpense = expensesRepository.findById(UUID.fromString(id))
+                    .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                            String.format(Messages.NOT_FOUND, id)));
+
+            // Buscar usuario
+            UserEntity user = userRepository.findById(UUID.fromString(userId))
+                    .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                            String.format(Messages.NOT_FOUND, userId)));
+
+            // Buscar categoría
+            CategoryEntity category = categoryRepository.findById(UUID.fromString(request.getCategory()))
+                    .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                            String.format(Messages.NOT_FOUND, request.getCategory())));
+
+            // Mapear los nuevos valores al objeto existente
+            mapper.map(request, existingExpense);
+            existingExpense.setUser(user);
+            existingExpense.setCategory(category);
+
+            // Guardar cambios
+            existingExpense = expensesRepository.save(existingExpense);
+
+            return mapperDto(existingExpense);
+
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, Messages.DATA_INTEGRITY);
+        } catch (RestExceptionHandler ex) {
+            throw ex; // Re-lanzar si ya es una excepción esperada
+        } catch (Exception ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    Messages.ERROR_ENTITY_UPDATE);
+        }
     }
 
     @Override
-    public ResponseDto delete(String userId, String id) {
+    public ResponseServerDto delete(String userId, String id) {
         ExpensesEntity expenses = expensesRepository.findOne(
-                filterWithParameters(Map.of("id", id, "user", userId)))
+                filterWithParameters(Map.of(Filters.KEY_ID, id, Filters.KEY_USER, userId)))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "Entity expenses not found."));
+                        String.format(Messages.NOT_FOUND, id)));
         try {
             expensesRepository.delete(expenses);
-            return new ResponseDto(id, HttpStatus.OK, true);
+            return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("Error to delete expenses", e);
-            return new ResponseDto("Error to delete expense", HttpStatus.METHOD_NOT_ALLOWED, false);
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_409, HttpStatus.CONFLICT,
+                    String.format(Messages.ERROR_ENTITY_DELETE, e.getMessage()));
         }
     }
 

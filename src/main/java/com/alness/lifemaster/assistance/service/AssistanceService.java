@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.alness.lifemaster.assistance.dto.request.AssistanceRequest;
 import com.alness.lifemaster.assistance.dto.response.AssistanceResponse;
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 
 public interface AssistanceService {
     public AssistanceResponse findOne(String userId, String id);
@@ -13,5 +13,5 @@ public interface AssistanceService {
     public AssistanceResponse save(String userId, AssistanceRequest request);
     public AssistanceResponse update(String userId, String id, AssistanceRequest request);
     public AssistanceResponse assignOutput(String userId, String id, String departureTime);
-    public ResponseDto delete(String userId, String id);
+    public ResponseServerDto delete(String userId, String id);
 }

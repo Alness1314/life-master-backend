@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alness.lifemaster.categories.dto.request.CategoryRequest;
 import com.alness.lifemaster.categories.dto.response.CategoryResponse;
 import com.alness.lifemaster.categories.service.CategoryService;
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -56,8 +56,8 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseDto> delete(@PathVariable String id) {
-        ResponseDto response = categoryService.delete(id);
+    public ResponseEntity<ResponseServerDto> delete(@PathVariable String id) {
+        ResponseServerDto response = categoryService.delete(id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 }

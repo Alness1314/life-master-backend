@@ -2,7 +2,6 @@ package com.alness.lifemaster.assistance.service.impl;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,6 +12,7 @@ import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,12 +23,16 @@ import com.alness.lifemaster.assistance.entity.AssistanceEntity;
 import com.alness.lifemaster.assistance.repository.AssistanceRepository;
 import com.alness.lifemaster.assistance.service.AssistanceService;
 import com.alness.lifemaster.assistance.specification.AssistanceSpecification;
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
+import com.alness.lifemaster.common.keys.Filters;
+import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.DateTimeUtils;
+import com.alness.lifemaster.utils.FuncUtils;
+import com.alness.lifemaster.utils.LoggerUtil;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -89,46 +93,38 @@ public class AssistanceServiceImpl implements AssistanceService {
     @Override
     public AssistanceResponse findOne(String userId, String id) {
         AssistanceEntity assistance = assistanceRepository
-                .findOne(filterWithParameters(Map.of("user", userId, "id", id)))
+                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "Entity not found"));
+                        String.format(Messages.NOT_FOUND, id)));
         return mapperDto(assistance);
 
     }
 
     @Override
     public List<AssistanceResponse> find(String userId, Map<String, String> params) {
-        return assistanceRepository.findAll(filterWithParameters(addUserIdToParams(userId, params)))
+        return assistanceRepository.findAll(filterWithParameters(FuncUtils.integrateUser(userId, params)))
                 .stream().map(this::mapperDto)
                 .toList();
-    }
-
-    /**
-     * 
-     * @param userId userId El ID del usuario.
-     * @param params Los parámetros originales.
-     * @return Un nuevo mapa con el ID de usuario agregado
-     */
-    private Map<String, String> addUserIdToParams(String userId, Map<String, String> params) {
-        Map<String, String> updatedParams = new HashMap<>(params);
-        updatedParams.put("user", userId);
-        return updatedParams;
     }
 
     @Override
     public AssistanceResponse save(String userId, AssistanceRequest request) {
         UserEntity user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        String.format("user with id %s not found.", userId)));
+                        String.format(Messages.NOT_FOUND, userId)));
         try {
             AssistanceEntity newAssistance = modelMapper.map(request, AssistanceEntity.class);
             newAssistance.setUser(user);
             newAssistance = assistanceRepository.save(newAssistance);
             return mapperDto(newAssistance);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("Error {}", e);
+            LoggerUtil.logError(e);
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error to save assistance");
+                    Messages.ERROR_ENTITY_UPDATE);
         }
     }
 
@@ -137,18 +133,18 @@ public class AssistanceServiceImpl implements AssistanceService {
         // Buscar al usuario por su ID
         UserEntity user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        String.format("user with id %s not found.", userId)));
+                        String.format(Messages.NOT_FOUND, userId)));
 
         try {
             // Buscar la asistencia existente por su ID
             AssistanceEntity existingAssistance = assistanceRepository.findById(UUID.fromString(id))
                     .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                            String.format("assistance with id %s not found.", id)));
+                            String.format(Messages.NOT_FOUND, id)));
 
             // Verificar que la asistencia pertenece al usuario
             if (!existingAssistance.getUser().getId().equals(user.getId())) {
                 throw new RestExceptionHandler(ApiCodes.API_CODE_403, HttpStatus.FORBIDDEN,
-                        String.format("User with id %s is not allowed to update this assistance.", userId));
+                        String.format(Messages.FORBIDEN_UPDATE_DATA, userId));
             }
 
             // Mapear los datos de la solicitud a la entidad de asistencia
@@ -162,27 +158,35 @@ public class AssistanceServiceImpl implements AssistanceService {
 
             // Retornar la respuesta de la asistencia actualizada
             return mapperDto(existingAssistance);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("Error {}", e);
+            LoggerUtil.logError(e);
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error to update assistance");
+                    Messages.ERROR_ENTITY_UPDATE);
         }
     }
 
     @Override
-    public ResponseDto delete(String userId, String id) {
+    public ResponseServerDto delete(String userId, String id) {
         AssistanceEntity assistance = assistanceRepository
-                .findOne(filterWithParameters(Map.of("user", userId, "id", id)))
+                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "Entity not found"));
+                        String.format(Messages.NOT_FOUND, id)));
 
         try {
             assistanceRepository.delete(assistance);
-            return new ResponseDto("Registro de asistencia eliminado", HttpStatus.OK, true);
+            return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("error al borrar registro asistencia", e);
-            return new ResponseDto("No se pudo eliminar el registro de asistencia", HttpStatus.METHOD_NOT_ALLOWED,
-                    false);
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_409, HttpStatus.CONFLICT,
+                    String.format(Messages.ERROR_ENTITY_DELETE, e.getMessage()));
         }
     }
 
@@ -197,17 +201,21 @@ public class AssistanceServiceImpl implements AssistanceService {
     @Override
     public AssistanceResponse assignOutput(String userId, String id, String departureTime) {
         AssistanceEntity assistance = assistanceRepository
-                .findOne(filterWithParameters(Map.of("user", userId, "id", id)))
+                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        "Entity not found"));
+                        String.format(Messages.NOT_FOUND, id)));
         try {
             assistance.setDepartureTime(DateTimeUtils.parseToLocalTime(departureTime));
             assistance = assistanceRepository.save(assistance);
             return mapperDto(assistance);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            log.error("Error", e);
+            LoggerUtil.logError(e);
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error to update assistance");
+                    Messages.ERROR_ENTITY_UPDATE);
         }
     }
 }

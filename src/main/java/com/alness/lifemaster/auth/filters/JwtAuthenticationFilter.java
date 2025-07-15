@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager, JwtTokenConfig jwtTokenConfig) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenConfig = jwtTokenConfig;
-        setFilterProcessesUrl("/api/v1/auth");
+        setFilterProcessesUrl(jwtTokenConfig.getApiPrefix() + "/auth");
     }
 
     @Override

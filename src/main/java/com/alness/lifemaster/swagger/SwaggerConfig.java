@@ -18,15 +18,17 @@ public class SwaggerConfig {
 	private static final String SCHEME = "Bearer";
 	private static final String BEARER_FORMAT = "JWT";
 
-	@Value("${swg.server.prod}")
-    private String serverProd;
+	@Value("${swg.server.url}")
+    private String serverUrl;
+
+	@Value("${swg.server.description}")
+	private String serverDescription;
 
 	@Bean
 	public OpenAPI customOpenAPI() {
 		return new OpenAPI()
 				.info(getInfo())
-				.addServersItem(new Server().url("http://localhost:7091").description("Development Server"))
-				.addServersItem(new Server().url(serverProd).description("Prod Server"))
+				.addServersItem(new Server().url(serverUrl).description(serverDescription))
 				.components(createComponents())
 				.addSecurityItem(new SecurityRequirement().addList(SCHEME_NAME));
 	}

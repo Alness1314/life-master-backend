@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alness.lifemaster.assistance.dto.request.AssistanceRequest;
 import com.alness.lifemaster.assistance.dto.response.AssistanceResponse;
 import com.alness.lifemaster.assistance.service.AssistanceService;
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -59,9 +59,9 @@ public class AssistanceController {
     }
 
     @DeleteMapping("/{userId}/assistance/{id}")
-    public ResponseEntity<ResponseDto> postMethodName(@PathVariable String userId,
+    public ResponseEntity<ResponseServerDto> postMethodName(@PathVariable String userId,
             @PathVariable String id) {
-        ResponseDto response = assistanceService.delete(userId, id);
+        ResponseServerDto response = assistanceService.delete(userId, id);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

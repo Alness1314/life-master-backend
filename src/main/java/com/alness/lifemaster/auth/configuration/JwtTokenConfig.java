@@ -18,6 +18,9 @@ public class JwtTokenConfig {
     @Value("${jwt.secret}")
     private String secret;
 
+    @Value("${api.prefix}")
+    private String apiPrefix;
+
     @PostConstruct
     public void init() {
         log.info("Secret key: {}", secret);
@@ -30,6 +33,10 @@ public class JwtTokenConfig {
 
     public Key getSecretKey(){
         return this.secretKey;
+    }
+
+    public String getApiPrefix() {
+        return apiPrefix;
     }
 
     
