@@ -22,6 +22,8 @@ public class Messages {
     public static final String DATA_INTEGRITY = "Violación de la integridad de los datos.";
     public static final String FORBIDEN_UPDATE_DATA = "El usuario con id [%s] no tiene permiso para actualizar esta información.";
 
+    public static final String USER_ALREADY_REGISTERED = "El nombre de usuario ya fue registrado.";
+
     private Messages() {
         throw new IllegalStateException("Utility class");
     }

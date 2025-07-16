@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.users.dto.request.UserRequest;
 import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.service.UserService;
@@ -48,8 +48,8 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseDto> postMethodName(@PathVariable String id) {
-        ResponseDto response = userService.delete(id);
+    public ResponseEntity<ResponseServerDto> postMethodName(@PathVariable String id) {
+        ResponseServerDto response = userService.delete(id);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

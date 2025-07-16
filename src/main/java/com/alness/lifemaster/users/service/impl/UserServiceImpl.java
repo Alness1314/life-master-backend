@@ -20,8 +20,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
+import com.alness.lifemaster.common.messages.Messages;
+import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.users.dto.CustomUser;
@@ -31,6 +33,8 @@ import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.users.service.UserService;
 import com.alness.lifemaster.users.specification.UserSpecification;
+import com.alness.lifemaster.utils.ApiCodes;
+import com.alness.lifemaster.utils.LoggerUtil;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +64,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public UserResponse save(UserRequest request) {
         UserEntity newUser = modelMapper.map(request, UserEntity.class);
         try {
+            if (request.getProfiles() == null) {
+                throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, Messages.NOT_FOUND_BASIC);
+            }
+
             List<ProfileEntity> profiles = new ArrayList<>();
             for (String profileName : request.getProfiles()) {
                 ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName)).orElse(null);
@@ -75,26 +83,28 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             newUser = userRepository.save(newUser);
             return mapperDto(newUser);
         } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT, "Username already exists: " + request.getUsername(), ex);
+                throw new RestExceptionHandler(ApiCodes.API_CODE_412,
+                        HttpStatus.PRECONDITION_FAILED, Messages.USER_ALREADY_REGISTERED);
             }
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Data integrity violation", ex);
-        } catch (ResponseStatusException ex) {
+                    HttpStatus.CONFLICT, Messages.DATA_INTEGRITY, ex);
+        } catch (RestExceptionHandler ex) {
+            LoggerUtil.logError(ex);
             throw ex; // Re-lanzar excepciones ya gestionadas
         } catch (Exception ex) {
-            ex.printStackTrace();
-            log.error("Error to save user", ex);
+            LoggerUtil.logError(ex);
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", ex);
+                    HttpStatus.INTERNAL_SERVER_ERROR, Messages.ERROR_ENTITY_SAVE, ex);
         }
     }
 
     @Override
     public UserResponse findOne(String id) {
         UserEntity findUser = userRepository.findOne(filterWithParameters(Map.of(Filters.KEY_ID, id)))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "resource not found"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, id)));
         return mapperDto(findUser);
     }
 
@@ -110,7 +120,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             // Buscar el usuario existente por su ID
             UserEntity existingUser = userRepository.findById(UUID.fromString(id))
                     .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND, "User not found with id: " + id));
+                            HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, id)));
 
             // Actualizar los campos del usuario existente con los valores de la solicitud
             modelMapper.map(request, existingUser);
@@ -120,7 +130,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             for (String profileName : request.getProfiles()) {
                 ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName))
                         .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND, "Profile not found with id: " + profileName));
+                                HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, profileName)));
                 profiles.add(profile);
             }
             existingUser.setProfiles(profiles);
@@ -142,34 +152,40 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             return mapperDto(existingUser);
 
         } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT, "Username already exists: " + request.getUsername(), ex);
+                throw new RestExceptionHandler(ApiCodes.API_CODE_412,
+                        HttpStatus.PRECONDITION_FAILED, Messages.USER_ALREADY_REGISTERED);
             }
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Data integrity violation", ex);
-        } catch (ResponseStatusException ex) {
+                    HttpStatus.CONFLICT, Messages.DATA_INTEGRITY, ex);
+        } catch (RestExceptionHandler ex) {
+            LoggerUtil.logError(ex);
             throw ex; // Re-lanzar excepciones ya gestionadas
         } catch (Exception ex) {
-            ex.printStackTrace();
-            log.error("Error to update user", ex);
+            LoggerUtil.logError(ex);
             throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", ex);
+                    HttpStatus.INTERNAL_SERVER_ERROR, Messages.ERROR_ENTITY_UPDATE, ex);
         }
     }
 
     @Override
-    public ResponseDto delete(String id) {
+    public ResponseServerDto delete(String id) {
         UserEntity findUser = userRepository.findOne(filterWithParameters(Map.of(Filters.KEY_ID, id)))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "resource not found"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, id)));
         try {
             findUser.setErased(true);
             userRepository.save(findUser);
-            return new ResponseDto("The user was successfully deleted", HttpStatus.OK, true);
+            return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("error to delete ", e);
-            return new ResponseDto("The user could not be deleted", HttpStatus.CONFLICT, false);
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_409, HttpStatus.CONFLICT,
+                    String.format(Messages.ERROR_ENTITY_DELETE, e.getMessage()));
         }
     }
 
@@ -183,10 +199,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Specification<UserEntity> specification = filterWithParameters(Map.of("username", username, "erased", "false"));
+        Specification<UserEntity> specification = filterWithParameters(
+                Map.of(Filters.KEY_USERNAME, username, Filters.KEY_ERASED, "false"));
         UserEntity user = userRepository.findOne(specification).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        String.format("User with name: [%s] not found in database", username)));
+                        String.format(Messages.NOT_FOUND, username)));
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
         user.getProfiles().forEach(profile -> authorities.add(new SimpleGrantedAuthority(profile.getName())));
         return new CustomUser(user.getUsername(), user.getPassword(), authorities, user.getId());

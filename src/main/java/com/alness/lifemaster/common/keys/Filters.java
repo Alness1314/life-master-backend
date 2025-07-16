@@ -8,6 +8,7 @@ public class Filters {
     public static final String KEY_MODULE = "module";
     public static final String KEY_STATUS = "status";
     public static final String KEY_DATA = "data";
+    public static final String KEY_ERASED = "erased";
 
     private Filters(){
         throw new IllegalStateException("Utility class");
