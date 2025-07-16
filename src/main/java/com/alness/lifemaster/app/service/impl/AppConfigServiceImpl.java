@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,9 @@ public class AppConfigServiceImpl implements AppConfigService {
     @Autowired
     private DecodeJwtService jwtService;
 
+    @Value("${sys.user.password}")
+    private String password;
+
     @Override
     public ResponseDto createDefaultValues() {
         boolean resultAdmin = createProfile(AllowedProfiles.ADMIN.getName());
@@ -46,7 +50,7 @@ public class AppConfigServiceImpl implements AppConfigService {
         ProfileResponse profileResp = profileService.findByName(AllowedProfiles.ADMIN.getName());
 
         boolean resultDefaultUser = createUser(
-                new UserRequest("administrator@gmail.com", "admin025#", "Technical Support", null,
+                new UserRequest("master_life2025@gmail.com", password, "Technical Support", null,
                         Collections.singletonList(profileResp.getId().toString())));
 
         if (resultAdmin && resultEmployee && resultUser && resultDefaultUser) {

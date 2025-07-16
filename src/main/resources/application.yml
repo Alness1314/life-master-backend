@@ -47,3 +47,8 @@ swg:
     server:
         url: ${SERVER_URL}
         description: ${SERVER_DESCRIPTION}
+
+
+sys:
+    user:
+        password: ${DEFAULT_PASS}
