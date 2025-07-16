@@ -32,6 +32,8 @@ springdoc:
         path: /api-docs
     swagger-ui:
         persist-authorization: true
+        tags-sorter: alpha
+        doc-expansion: list  # none | list | full
 
 #prefix endpoints configuration
 api:

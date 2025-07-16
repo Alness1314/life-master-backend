@@ -9,6 +9,9 @@ public class Filters {
     public static final String KEY_STATUS = "status";
     public static final String KEY_DATA = "data";
     public static final String KEY_ERASED = "erased";
+    public static final String KEY_ENCODE = "encode";
+    public static final String KEY_DECODE = "decode";
+    public static final String KEY_PROP = "key";
 
     private Filters(){
         throw new IllegalStateException("Utility class");

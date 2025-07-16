@@ -23,6 +23,7 @@ public class Messages {
     public static final String FORBIDEN_UPDATE_DATA = "El usuario con id [%s] no tiene permiso para actualizar esta información.";
 
     public static final String USER_ALREADY_REGISTERED = "El nombre de usuario ya fue registrado.";
+    public static final String MODULE_NOT_PARENT = "El módulo con id: [%s] no está marcado como padre.";
 
     private Messages() {
         throw new IllegalStateException("Utility class");

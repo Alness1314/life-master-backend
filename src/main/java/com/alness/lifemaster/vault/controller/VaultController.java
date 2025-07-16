@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alness.lifemaster.common.dto.ResponseDto;
+import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.vault.dto.request.VaultRequest;
 import com.alness.lifemaster.vault.dto.response.VaultResponse;
 import com.alness.lifemaster.vault.service.VaultService;
@@ -58,8 +58,8 @@ public class VaultController {
     }
 
     @DeleteMapping("/{userId}/vault/{id}")
-    public ResponseEntity<ResponseDto> delete(@PathVariable String userId, @PathVariable String id) {
-        ResponseDto response = vaultService.delete(userId, id);
+    public ResponseEntity<ResponseServerDto> delete(@PathVariable String userId, @PathVariable String id) {
+        ResponseServerDto response = vaultService.delete(userId, id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 }
