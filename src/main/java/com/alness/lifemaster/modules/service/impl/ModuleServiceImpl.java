@@ -207,6 +207,7 @@ public class ModuleServiceImpl implements ModuleService {
         return new ModuleSpecification().getSpecificationByFilters(parameters);
     }
 
+    @SuppressWarnings("null")
     @Override
     public ResponseServerDto multiSave(List<ModuleRequest> modules) {
         List<Map<String, Object>> response = new ArrayList<>();
