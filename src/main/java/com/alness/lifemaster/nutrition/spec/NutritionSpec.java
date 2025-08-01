@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.Nullable;
 
-import com.alness.lifemaster.notes.entity.NotesEntity;
 import com.alness.lifemaster.nutrition.entity.NutritionEntity;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.utils.DateTimeUtils;
@@ -52,7 +51,7 @@ public class NutritionSpec implements Specification<NutritionEntity> {
 
     private Specification<NutritionEntity> filterByUser(String userId) {
         return (root, query, criteriaBuilder) -> {
-            Join<NotesEntity, UserEntity> userJoin = root.join("user");
+            Join<NutritionEntity, UserEntity> userJoin = root.join("user");
             return criteriaBuilder.equal(userJoin.get("id"), UUID.fromString(userId));
         };
     }
