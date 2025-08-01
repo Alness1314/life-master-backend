@@ -1,7 +1,6 @@
 package com.alness.lifemaster.debts.service.impl;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -80,40 +79,41 @@ public class DebtsServiceImpl implements DebtsService {
 
     @Override
     public DebtsResponse save(String userId, DebtsRequest request) {
-        UserEntity user = userRepository.findById(UUID.fromString(userId))
+        UUID uuid = UUID.fromString(userId);
+        UserEntity user = userRepository.findById(uuid)
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                         String.format(Messages.NOT_FOUND, userId)));
 
         try {
             DebtsEntity debts = modelMapper.map(request, DebtsEntity.class);
+            debts.setUser(user);
 
-            List<PaymentsEntity> paymentsList = new ArrayList<>();
-            for (PaymentRequest payment : request.getPayments()) {
-                PaymentsEntity paymentEntity = modelMapper.map(payment,
-                        PaymentsEntity.class);
-                paymentEntity.setDebts(debts);
-                paymentsList.add(paymentEntity);
-            }
+            List<PaymentsEntity> paymentsList = request.getPayments().stream()
+                    .map(payment -> {
+                        PaymentsEntity entity = modelMapper.map(payment, PaymentsEntity.class);
+                        entity.setDebts(debts);
+                        return entity;
+                    })
+                    .toList();
 
             debts.setPayments(paymentsList);
-            debts.setUser(user);
-            debts = debtsRespository.save(debts);
-            return mapperDto(debts);
+
+            return mapperDto(debtsRespository.save(debts));
+
         } catch (DataIntegrityViolationException ex) {
             LoggerUtil.logError(ex);
-            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
-                    Messages.DATA_INTEGRITY);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, Messages.DATA_INTEGRITY);
+
         } catch (InvalidDataAccessResourceUsageException ex) {
             LoggerUtil.logError(ex);
-            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error en la sintaxis de acceso a datos: " + ex.getMessage());
+            throw new RestExceptionHandler(ApiCodes.API_CODE_412, HttpStatus.PRECONDITION_FAILED,
+                    Messages.DATA_ACCESS_SYNTAX);
+
         } catch (Exception e) {
             LoggerUtil.logError(e);
-            e.printStackTrace();
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
                     Messages.ERROR_ENTITY_SAVE);
         }
-
     }
 
     @Override
@@ -135,7 +135,53 @@ public class DebtsServiceImpl implements DebtsService {
 
     @Override
     public DebtsResponse update(String userId, String id, DebtsRequest request) {
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        DebtsEntity existingDebt = debtsRespository
+                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
+
+        try {
+            // Actualiza campos simples
+            existingDebt.setCreditorName(request.getCreditorName());
+            existingDebt.setTotalAmount(request.getTotalAmount());
+            existingDebt.setCurrency(request.getCurrency());
+            existingDebt.setHasInterest(request.getHasInterest());
+            existingDebt.setNumberOfPayments(request.getNumberOfPayments());
+            existingDebt.setPaymentsMade(request.getPaymentsMade());
+            existingDebt.setDueDate(DateTimeUtils.parseToLocalDate(request.getDueDate()));
+            existingDebt.setIsFullyPaid(request.getIsFullyPaid());
+            existingDebt.setNotes(request.getNotes());
+
+            // Limpiar alimentos anteriores
+            existingDebt.getPayments().clear();
+
+            // Crea nuevos Payments
+            List<PaymentsEntity> newPayments = request.getPayments().stream()
+                    .map(p -> {
+                        PaymentsEntity pe = modelMapper.map(p, PaymentsEntity.class);
+                        pe.setDebts(existingDebt);
+                        return pe;
+                    })
+                    .toList();
+
+            existingDebt.getPayments().addAll(newPayments);
+
+            return mapperDto(debtsRespository.save(existingDebt));
+
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, Messages.DATA_INTEGRITY);
+
+        } catch (InvalidDataAccessResourceUsageException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_412, HttpStatus.PRECONDITION_FAILED,
+                    Messages.DATA_ACCESS_SYNTAX);
+
+        } catch (Exception e) {
+            LoggerUtil.logError(e);
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    Messages.ERROR_ENTITY_UPDATE);
+        }
     }
 
     @Override

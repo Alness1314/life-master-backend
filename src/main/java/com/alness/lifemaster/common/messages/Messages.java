@@ -20,6 +20,7 @@ public class Messages {
     public static final String NOT_FOUND_BASIC = "El recurso solicitado no fue encontrado.";
     public static final String NOT_FOUND_FILE = "El archivo solicitado con id: [%s] no fue encontrado.";
     public static final String DATA_INTEGRITY = "Violación de la integridad de los datos.";
+    public static final String DATA_ACCESS_SYNTAX = "Error en la sintaxis de acceso a datos.";
     public static final String FORBIDEN_UPDATE_DATA = "El usuario con id [%s] no tiene permiso para actualizar esta información.";
 
     public static final String USER_ALREADY_REGISTERED = "El nombre de usuario ya fue registrado.";
