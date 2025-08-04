@@ -6,9 +6,6 @@ import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -18,6 +15,7 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
@@ -31,32 +29,14 @@ import com.alness.lifemaster.vault.repository.VaultRepository;
 import com.alness.lifemaster.vault.service.VaultService;
 import com.alness.lifemaster.vault.specification.VaultSpecification;
 
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class VaultServiceImpl implements VaultService {
-
-    @Autowired
-    private VaultRepository vaultRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    private ModelMapper mapper = new ModelMapper();
-
-    @PostConstruct
-    public void init() {
-        configureModelMapper();
-    }
-
-    private void configureModelMapper() {
-        mapper.getConfiguration()
-                .setSkipNullEnabled(true)
-                .setFieldMatchingEnabled(true)
-                .setMatchingStrategy(MatchingStrategies.STRICT);
-    }
+    private final VaultRepository vaultRepository;
+    private final UserRepository userRepository;
+    private final GenericMapper mapper;
 
     @Override
     public List<VaultResponse> find(String userId, Map<String, String> params) {

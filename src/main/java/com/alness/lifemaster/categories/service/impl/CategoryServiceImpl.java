@@ -3,8 +3,6 @@ package com.alness.lifemaster.categories.service.impl;
 import java.util.List;
 import java.util.Map;
 
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -20,18 +18,18 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    private ModelMapper mapper = new ModelMapper();
+    
+    private final CategoryRepository categoryRepository;
+    private final GenericMapper mapper;
 
     @Override
     public List<CategoryResponse> find(Map<String, String> params) {

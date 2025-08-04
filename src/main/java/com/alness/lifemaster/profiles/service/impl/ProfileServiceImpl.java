@@ -5,8 +5,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -17,6 +15,7 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.profiles.dto.request.ProfileRequest;
@@ -28,19 +27,17 @@ import com.alness.lifemaster.profiles.specification.ProfileSpecification;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
-    @Autowired
-    private ProfileRepository profileRepository;
-
-    ModelMapper modelMapper = new ModelMapper();
+    private final ProfileRepository profileRepository;
+    private final GenericMapper mapper;
 
     @Override
     public ProfileResponse save(ProfileRequest request) {
-        ProfileEntity newProfile = modelMapper.map(request, ProfileEntity.class);
+        ProfileEntity newProfile = mapper.map(request, ProfileEntity.class);
         try {
             newProfile = profileRepository.save(newProfile);
             return mapperDto(newProfile);
@@ -77,7 +74,7 @@ public class ProfileServiceImpl implements ProfileService {
                         String.format(Messages.NOT_FOUND, id)));
 
         // Mapear datos del request al perfil existente
-        modelMapper.map(request, existingProfile);
+        mapper.map(request, existingProfile);
 
         try {
             existingProfile = profileRepository.save(existingProfile);
@@ -114,7 +111,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     private ProfileResponse mapperDto(ProfileEntity source) {
-        return modelMapper.map(source, ProfileResponse.class);
+        return mapper.map(source, ProfileResponse.class);
     }
 
     public Specification<ProfileEntity> filterWithParameters(Map<String, String> parameters) {

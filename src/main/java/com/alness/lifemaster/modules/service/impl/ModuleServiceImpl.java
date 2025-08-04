@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -17,6 +15,7 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.dto.request.ModuleRequest;
 import com.alness.lifemaster.modules.dto.response.ModuleResponse;
@@ -29,22 +28,20 @@ import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class ModuleServiceImpl implements ModuleService {
-    @Autowired
-    private ModuleRepository moduleRepository;
+    private final ModuleRepository moduleRepository;
 
-    @Autowired
-    private ProfileRepository profileRepository;
+    private final ProfileRepository profileRepository;
 
-    ModelMapper modelMapper = new ModelMapper();
+    private final GenericMapper mapper;
 
     @Override
     public ModuleResponse createModule(ModuleRequest module) {
-        ModuleEntity newModule = modelMapper.map(module, ModuleEntity.class);
+        ModuleEntity newModule = mapper.map(module, ModuleEntity.class);
         try {
             for (String profileName : module.getProfile()) {
                 ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName)).orElse(null);
@@ -175,7 +172,7 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     public ModuleResponse mapperModule(ModuleEntity module) {
-        return modelMapper.map(module, ModuleResponse.class);
+        return mapper.map(module, ModuleResponse.class);
     }
 
     private ModuleResponse convertToDto(ModuleEntity module) {
@@ -200,7 +197,7 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     public ModuleDto mapperModules(ModuleEntity module) {
-        return modelMapper.map(module, ModuleDto.class);
+        return mapper.map(module, ModuleDto.class);
     }
 
     public Specification<ModuleEntity> filterWithParameters(Map<String, String> parameters) {

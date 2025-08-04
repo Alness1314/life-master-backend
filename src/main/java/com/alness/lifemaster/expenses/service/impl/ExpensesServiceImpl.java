@@ -1,16 +1,9 @@
 package com.alness.lifemaster.expenses.service.impl;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
-import org.modelmapper.AbstractConverter;
-import org.modelmapper.Converter;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -28,56 +21,23 @@ import com.alness.lifemaster.expenses.entity.ExpensesEntity;
 import com.alness.lifemaster.expenses.repository.ExpensesRepository;
 import com.alness.lifemaster.expenses.service.ExpensesService;
 import com.alness.lifemaster.expenses.specification.ExpensesSpecification;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
-import com.alness.lifemaster.utils.DateTimeUtils;
 import com.alness.lifemaster.utils.FuncUtils;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class ExpensesServiceImpl implements ExpensesService {
-    @Autowired
-    private ExpensesRepository expensesRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    private ModelMapper mapper = new ModelMapper();
-
-    @PostConstruct
-    public void init() {
-        configureModelMapper();
-        Converter<String, LocalDate> localDateConverter = createConverter(DateTimeUtils::parseToLocalDate);
-
-        mapper.createTypeMap(ExpensesRequest.class, ExpensesEntity.class)
-                .addMappings(
-                        mpa -> mpa.using(localDateConverter).map(ExpensesRequest::getPaymentDate,
-                                ExpensesEntity::setPaymentDate));
-    }
-
-    private void configureModelMapper() {
-        mapper.getConfiguration()
-                .setSkipNullEnabled(true)
-                .setFieldMatchingEnabled(true)
-                .setMatchingStrategy(MatchingStrategies.STRICT);
-    }
-
-    private <S, D> Converter<S, D> createConverter(Function<S, D> converterFunction) {
-        return new AbstractConverter<>() {
-            @Override
-            protected D convert(S source) {
-                return source == null ? null : converterFunction.apply(source);
-            }
-        };
-    }
+    private final ExpensesRepository expensesRepository;
+    private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+    private final GenericMapper mapper;
 
     @Override
     public List<ExpensesResponse> find(String userId, Map<String, String> params) {

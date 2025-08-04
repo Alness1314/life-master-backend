@@ -4,9 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -16,6 +13,7 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.notes.dto.request.NotesRequest;
 import com.alness.lifemaster.notes.dto.response.NotesResponse;
 import com.alness.lifemaster.notes.entity.NotesEntity;
@@ -28,31 +26,14 @@ import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.FuncUtils;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class NotesServiceImpl implements NotesService {
-    @Autowired
-    private NotesRepository notesRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    private ModelMapper mapper = new ModelMapper();
-
-    @PostConstruct
-    public void init() {
-        configureModelMapper();
-    }
-
-    private void configureModelMapper() {
-        mapper.getConfiguration()
-                .setSkipNullEnabled(true)
-                .setFieldMatchingEnabled(true)
-                .setMatchingStrategy(MatchingStrategies.STRICT);
-    }
+    private final NotesRepository notesRepository;
+    private final UserRepository userRepository;
+    private final GenericMapper mapper;
 
     @Override
     public List<NotesResponse> find(String userId, Map<String, String> params) {

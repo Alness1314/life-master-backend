@@ -15,6 +15,10 @@ import org.springframework.stereotype.Component;
 import com.alness.lifemaster.assistance.dto.request.AssistanceRequest;
 import com.alness.lifemaster.assistance.dto.response.AssistanceResponse;
 import com.alness.lifemaster.assistance.entity.AssistanceEntity;
+import com.alness.lifemaster.expenses.dto.request.ExpensesRequest;
+import com.alness.lifemaster.expenses.entity.ExpensesEntity;
+import com.alness.lifemaster.income.dto.request.IncomeRequest;
+import com.alness.lifemaster.income.entity.IncomeEntity;
 import com.alness.lifemaster.utils.DateTimeUtils;
 
 import jakarta.annotation.PostConstruct;
@@ -77,6 +81,16 @@ public class GenericMapper {
                     amp.using(localTimeToString).map(AssistanceEntity::getTimeEntry,
                             AssistanceResponse::setTimeEntry);
                 });
+
+        mapper.createTypeMap(ExpensesRequest.class, ExpensesEntity.class)
+                .addMappings(
+                        mpa -> mpa.using(stringToLocalDate).map(ExpensesRequest::getPaymentDate,
+                                ExpensesEntity::setPaymentDate));
+
+        mapper.createTypeMap(IncomeRequest.class, IncomeEntity.class)
+                .addMappings(
+                        mpa -> mpa.using(stringToLocalDate).map(IncomeRequest::getPaymentDate,
+                                IncomeEntity::setPaymentDate));
     }
 
     // Método para mapear un objeto

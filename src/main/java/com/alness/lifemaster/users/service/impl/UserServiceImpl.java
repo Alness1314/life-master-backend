@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -24,6 +21,7 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.users.dto.CustomUser;
@@ -36,33 +34,20 @@ import com.alness.lifemaster.users.specification.UserSpecification;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService, UserDetailsService {
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ProfileRepository profileRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    private ModelMapper modelMapper = new ModelMapper();
-
-    @PostConstruct
-    public void init() {
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
-        modelMapper.getConfiguration().setFieldMatchingEnabled(true);
-        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-    }
+   
+    private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final GenericMapper mapper;
 
     @Override
     public UserResponse save(UserRequest request) {
-        UserEntity newUser = modelMapper.map(request, UserEntity.class);
+        UserEntity newUser = mapper.map(request, UserEntity.class);
         try {
             if (request.getProfiles() == null) {
                 throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, Messages.NOT_FOUND_BASIC);
@@ -123,7 +108,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                             HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, id)));
 
             // Actualizar los campos del usuario existente con los valores de la solicitud
-            modelMapper.map(request, existingUser);
+            mapper.map(request, existingUser);
 
             // Actualizar los perfiles del usuario
             List<ProfileEntity> profiles = new ArrayList<>();
@@ -190,7 +175,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     private UserResponse mapperDto(UserEntity source) {
-        return modelMapper.map(source, UserResponse.class);
+        return mapper.map(source, UserResponse.class);
     }
 
     public Specification<UserEntity> filterWithParameters(Map<String, String> parameters) {
