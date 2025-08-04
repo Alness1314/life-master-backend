@@ -1,17 +1,9 @@
 package com.alness.lifemaster.assistance.service.impl;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
-import org.modelmapper.AbstractConverter;
-import org.modelmapper.Converter;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -27,6 +19,7 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
@@ -34,61 +27,14 @@ import com.alness.lifemaster.utils.DateTimeUtils;
 import com.alness.lifemaster.utils.FuncUtils;
 import com.alness.lifemaster.utils.LoggerUtil;
 
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class AssistanceServiceImpl implements AssistanceService {
-    @Autowired
-    private AssistanceRepository assistanceRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    ModelMapper modelMapper = new ModelMapper();
-
-    @PostConstruct
-    public void init() {
-
-        configureModelMapper();
-
-        Converter<String, LocalDate> localDateConverter = createConverter(DateTimeUtils::parseToLocalDate);
-        Converter<String, LocalTime> localTimeConverter = createConverter(DateTimeUtils::parseToLocalTime);
-        Converter<LocalTime, String> localTimeToStringConverter = createConverter(
-                DateTimeUtils::parseLocalTimeToString);
-
-        modelMapper.createTypeMap(AssistanceRequest.class, AssistanceEntity.class)
-                .addMappings(mpi -> {
-                    mpi.using(localTimeConverter).map(AssistanceRequest::getDepartureTime,
-                            AssistanceEntity::setDepartureTime);
-                    mpi.using(localTimeConverter).map(AssistanceRequest::getTimeEntry, AssistanceEntity::setTimeEntry);
-                    mpi.using(localDateConverter).map(AssistanceRequest::getWorkDate, AssistanceEntity::setWorkDate);
-                });
-        modelMapper.createTypeMap(AssistanceEntity.class, AssistanceResponse.class)
-                .addMappings(amp -> {
-                    amp.using(localTimeToStringConverter).map(AssistanceEntity::getDepartureTime,
-                            AssistanceResponse::setDepartureTime);
-                    amp.using(localTimeToStringConverter).map(AssistanceEntity::getTimeEntry,
-                            AssistanceResponse::setTimeEntry);
-                });
-    }
-
-    private void configureModelMapper() {
-        modelMapper.getConfiguration()
-                .setSkipNullEnabled(true)
-                .setFieldMatchingEnabled(true)
-                .setMatchingStrategy(MatchingStrategies.STRICT);
-    }
-
-    private <S, D> Converter<S, D> createConverter(Function<S, D> converterFunction) {
-        return new AbstractConverter<>() {
-            @Override
-            protected D convert(S source) {
-                return source == null ? null : converterFunction.apply(source);
-            }
-        };
-    }
+    private final AssistanceRepository assistanceRepository;
+    private final UserRepository userRepository;
+    private final GenericMapper mapper;
 
     @Override
     public AssistanceResponse findOne(String userId, String id) {
@@ -113,7 +59,7 @@ public class AssistanceServiceImpl implements AssistanceService {
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                         String.format(Messages.NOT_FOUND, userId)));
         try {
-            AssistanceEntity newAssistance = modelMapper.map(request, AssistanceEntity.class);
+            AssistanceEntity newAssistance = mapper.map(request, AssistanceEntity.class);
             newAssistance.setUser(user);
             newAssistance = assistanceRepository.save(newAssistance);
             return mapperDto(newAssistance);
@@ -148,7 +94,7 @@ public class AssistanceServiceImpl implements AssistanceService {
             }
 
             // Mapear los datos de la solicitud a la entidad de asistencia
-            modelMapper.map(request, existingAssistance); // Esto actualizará los valores del objeto existingAssistance
+            mapper.map(request, existingAssistance); // Esto actualizará los valores del objeto existingAssistance
 
             // Establecer el usuario en la entidad (por si hubo cambios en el request)
             existingAssistance.setUser(user);
@@ -191,7 +137,7 @@ public class AssistanceServiceImpl implements AssistanceService {
     }
 
     private AssistanceResponse mapperDto(AssistanceEntity source) {
-        return modelMapper.map(source, AssistanceResponse.class);
+        return mapper.map(source, AssistanceResponse.class);
     }
 
     public Specification<AssistanceEntity> filterWithParameters(Map<String, String> params) {

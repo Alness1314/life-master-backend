@@ -27,5 +27,4 @@ public class AssistanceResponse {
     private Boolean unjustifiedAbsence;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
-    private Boolean erased;
 }

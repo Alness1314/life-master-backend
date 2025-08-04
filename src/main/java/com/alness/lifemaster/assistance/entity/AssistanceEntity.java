@@ -57,9 +57,6 @@ public class AssistanceEntity {
     @Column(name = "update_at", nullable = false, updatable = true, columnDefinition = "timestamp without time zone")
     private LocalDateTime updateAt;
 
-    //@Column(nullable = false, columnDefinition = "boolean")
-    //private Boolean erased;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
@@ -68,7 +65,6 @@ public class AssistanceEntity {
     private void init(){
         setCreateAt(LocalDateTime.now());
         setUpdateAt(LocalDateTime.now());
-        //setErased(false);
     }
 
     @PreUpdate
