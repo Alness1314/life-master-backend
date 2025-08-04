@@ -1,7 +1,6 @@
 package com.alness.lifemaster.vault.specification;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -24,21 +23,19 @@ public class VaultSpecification implements Specification<VaultEntity> {
     }
 
     public Specification<VaultEntity> getSpecificationByFilters(Map<String, String> params) {
+        Specification<VaultEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<VaultEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "site" -> filterBySite(entry.getValue());
+                case "user" -> filterByUser(entry.getValue());
+                default -> null;
+            };
 
-        Specification<VaultEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "site":
-                    specification = specification.and(this.filterBySite(entry.getValue()));
-                    break;
-                case "user":
-                    specification = specification.and(this.filterByUser(entry.getValue()));
-                    break;
-                default:
-                    break;
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;
@@ -59,5 +56,5 @@ public class VaultSpecification implements Specification<VaultEntity> {
         return (root, query, cb) -> cb.equal(root.<String>get("siteName"), siteName);
 
     }
-    
+
 }
