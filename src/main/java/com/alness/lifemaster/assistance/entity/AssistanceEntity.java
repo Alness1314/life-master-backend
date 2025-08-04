@@ -33,10 +33,10 @@ public class AssistanceEntity {
     @Column(name = "work_date", nullable = false, updatable = false, columnDefinition = "date")
     private LocalDate workDate;
 
-    @Column(name = "hora_entrada", nullable = true, updatable = false, columnDefinition = "time without time zone")
+    @Column(name = "hora_entrada", nullable = true, updatable = true, columnDefinition = "time without time zone")
     private LocalTime timeEntry;
 
-    @Column(name = "hora_salida", nullable = true, updatable = false, columnDefinition = "time without time zone")
+    @Column(name = "hora_salida", nullable = true, updatable = true, columnDefinition = "time without time zone")
     private LocalTime departureTime;
 
     @Column(name = "on_time", nullable = true, columnDefinition = "boolean")
