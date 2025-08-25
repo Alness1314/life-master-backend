@@ -1,7 +1,6 @@
 package com.alness.lifemaster.profiles.specification;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -23,20 +22,19 @@ public class ProfileSpecification implements Specification<ProfileEntity> {
     }
 
     public Specification<ProfileEntity> getSpecificationByFilters(Map<String, String> params) {
-        Specification<ProfileEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "name":
-                    specification = specification.and(this.filterByName(entry.getValue()));
-                    break;
-                case "erased":
-                    specification = specification.and(this.filterByEnable(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<ProfileEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<ProfileEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "name" -> filterByName(entry.getValue());
+                case "erased" -> filterByEnable(entry.getValue());
+                default -> null;
+            };
+
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;

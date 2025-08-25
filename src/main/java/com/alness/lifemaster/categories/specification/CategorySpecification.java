@@ -1,7 +1,6 @@
 package com.alness.lifemaster.categories.specification;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -13,7 +12,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-public class CategorySpecification implements Specification<CategoryEntity>{
+public class CategorySpecification implements Specification<CategoryEntity> {
 
     @SuppressWarnings("null")
     @Override
@@ -23,17 +22,17 @@ public class CategorySpecification implements Specification<CategoryEntity>{
 
     public Specification<CategoryEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<CategoryEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "name":
-                    specification = specification.and(this.filterByName(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<CategoryEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<CategoryEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "name" -> filterByName(entry.getValue());
+                default -> null;
+            };
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;
@@ -45,7 +44,7 @@ public class CategorySpecification implements Specification<CategoryEntity>{
 
     private Specification<CategoryEntity> filterByName(String name) {
         return (root, query, cb) -> cb.equal(root.<String>get("name"), name);
-        
+
     }
-    
+
 }

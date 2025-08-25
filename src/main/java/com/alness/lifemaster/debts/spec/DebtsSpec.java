@@ -1,7 +1,6 @@
 package com.alness.lifemaster.debts.spec;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -16,7 +15,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-public class DebtsSpec implements Specification<DebtsEntity>{
+public class DebtsSpec implements Specification<DebtsEntity> {
 
     @SuppressWarnings("null")
     @Override
@@ -28,17 +27,18 @@ public class DebtsSpec implements Specification<DebtsEntity>{
 
     public Specification<DebtsEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<DebtsEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "user":
-                    specification = specification.and(this.filterByUser(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<DebtsEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<DebtsEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "user" -> filterByUser(entry.getValue());
+                default -> null;
+            };
+
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;
@@ -54,5 +54,5 @@ public class DebtsSpec implements Specification<DebtsEntity>{
     private Specification<DebtsEntity> filterById(String id) {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
-    
+
 }

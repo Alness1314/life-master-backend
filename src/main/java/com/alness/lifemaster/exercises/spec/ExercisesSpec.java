@@ -2,7 +2,6 @@ package com.alness.lifemaster.exercises.spec;
 
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -30,20 +29,18 @@ public class ExercisesSpec implements Specification<ExercisesEntity> {
 
     public Specification<ExercisesEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<ExercisesEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "date":
-                    specification = specification.and(this.filterByDate(entry.getValue()));
-                    break;
-                case "user":
-                    specification = specification.and(this.filterByUser(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<ExercisesEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<ExercisesEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "date" -> filterByDate(entry.getValue());
+                case "user" -> filterByUser(entry.getValue());
+                default -> null;
+            };
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;

@@ -2,7 +2,6 @@ package com.alness.lifemaster.nutrition.spec;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -30,20 +29,22 @@ public class NutritionSpec implements Specification<NutritionEntity> {
 
     public Specification<NutritionEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<NutritionEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "date":
-                    specification = specification.and(this.filterByDate(entry.getValue()));
-                    break;
-                case "user":
-                    specification = specification.and(this.filterByUser(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<NutritionEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<NutritionEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+
+                case "date" -> filterByDate(entry.getValue());
+
+                case "user" -> filterByUser(entry.getValue());
+
+                default -> null;
+            };
+
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;

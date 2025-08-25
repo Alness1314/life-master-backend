@@ -26,21 +26,19 @@ public class ModuleSpecification implements Specification<ModuleEntity> {
 
     public Specification<ModuleEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<ModuleEntity> specification = getDefaultSpecification();
+        Specification<ModuleEntity> specification = status();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<ModuleEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "profile" ->hasProfileId(entry.getValue());
+                case "level" -> filterByLevel(entry.getValue());
+                default -> null;
+            };
 
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "profile":
-                    specification = specification.and(this.hasProfileId(entry.getValue()));
-                    break;
-                case "level":
-                    specification = specification.and(this.filterByLevel(entry.getValue()));
-                    break;
-                default:
-                    break;
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;
@@ -48,10 +46,6 @@ public class ModuleSpecification implements Specification<ModuleEntity> {
 
     private Specification<ModuleEntity> filterById(String id) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.<String>get("id"), id);
-    }
-
-    private Specification<ModuleEntity> getDefaultSpecification() {
-        return Specification.where(this.status());
     }
 
     private Specification<ModuleEntity> status() {

@@ -14,16 +14,16 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-public class UserSpecification implements Specification<UserEntity>{
+public class UserSpecification implements Specification<UserEntity> {
     @SuppressWarnings("null")
     @Override
     @Nullable
     public Predicate toPredicate(Root<UserEntity> arg0, @Nullable CriteriaQuery<?> arg1, CriteriaBuilder arg2) {
         return null;
     }
-    
-    public Specification<UserEntity> getSpecificationByFilters(Map<String, String> params){
-        Specification<UserEntity> specification = Specification.where(this.filterByErased("false"));
+
+    public Specification<UserEntity> getSpecificationByFilters(Map<String, String> params) {
+        Specification<UserEntity> specification = this.filterByErased("false");
         for (Entry<String, String> entry : params.entrySet()) {
             switch (entry.getKey()) {
                 case "id":
@@ -48,7 +48,7 @@ public class UserSpecification implements Specification<UserEntity>{
 
     private Specification<UserEntity> filterByUsername(String username) {
         return (root, query, cb) -> cb.like(root.<String>get("username"), username);
-        
+
     }
 
     private Specification<UserEntity> filterByErased(String enabled) {

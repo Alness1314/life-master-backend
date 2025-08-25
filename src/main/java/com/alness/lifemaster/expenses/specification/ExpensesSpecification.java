@@ -1,7 +1,6 @@
 package com.alness.lifemaster.expenses.specification;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -25,20 +24,19 @@ public class ExpensesSpecification implements Specification<ExpensesEntity> {
 
     public Specification<ExpensesEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<ExpensesEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "bank":
-                    specification = specification.and(this.filterByBank(entry.getValue()));
-                    break;
-                case "user":
-                    specification = specification.and(this.filterByUser(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<ExpensesEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<ExpensesEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "bank" -> filterByBank(entry.getValue());
+                case "user" -> filterByUser(entry.getValue());
+                default -> null;
+            };
+
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;

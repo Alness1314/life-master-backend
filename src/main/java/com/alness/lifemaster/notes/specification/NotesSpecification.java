@@ -1,7 +1,6 @@
 package com.alness.lifemaster.notes.specification;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -16,32 +15,32 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-public class NotesSpecification implements Specification<NotesEntity>{
+public class NotesSpecification implements Specification<NotesEntity> {
 
     @SuppressWarnings("null")
     @Override
     @Nullable
     public Predicate toPredicate(Root<NotesEntity> root, @Nullable CriteriaQuery<?> query,
             CriteriaBuilder criteriaBuilder) {
-      return null;
+        return null;
     }
-    
+
     public Specification<NotesEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<NotesEntity> specification = Specification.where(null);
-        for (Entry<String, String> entry : params.entrySet()) {
-            switch (entry.getKey()) {
-                case "id":
-                    specification = specification.and(this.filterById(entry.getValue()));
-                    break;
-                case "title":
-                    specification = specification.and(this.filterBySource(entry.getValue()));
-                    break;
-                case "user":
-                    specification = specification.and(this.filterByUser(entry.getValue()));
-                    break;
-                default:
-                    break;
+        Specification<NotesEntity> specification = null;
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            Specification<NotesEntity> currentFilter = switch (entry.getKey()) {
+                case "id" -> filterById(entry.getValue());
+                case "title" -> filterBySource(entry.getValue());
+                case "user" -> filterByUser(entry.getValue());
+
+                default -> null;
+            };
+
+            if (currentFilter != null) {
+                specification = (specification == null)
+                        ? currentFilter
+                        : specification.and(currentFilter);
             }
         }
         return specification;
