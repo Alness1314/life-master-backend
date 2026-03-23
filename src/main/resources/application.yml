@@ -26,6 +26,25 @@ spring:
         hibernate: 
             ddl-auto: none # Opciones: create, create-drop, update, validate, none
 
+    mail:
+        host: ${EMAIL_HOST:smtp.gmail.com}
+        port: ${EMAIL_PORT:587}
+        username: ${EMAIL_USERNAME}
+        password: ${EMAIL_PASSWORD}
+        properties:
+            mail:
+                smtp:
+                    auth: ${SMTP_AUTH:true}
+                    starttls:
+                        enable: ${SMTP_STARTTLS_ENABLE:true}
+                        required: ${SMTP_STARTTLS_REQUIRE:true}
+                    ssl:
+                        enable: ${SMTP_SSL_ENABLE:false}
+                        trust: ${SMTP_SSL_TRUST:smtp.gmail.com}
+                    connectiontimeout: ${SMTP_CONNECTIONTIMEOUT:5000}
+                    timeout: ${SMTP_TIMEOUT:5000}
+                    writetimeout: ${SMTP_WRITETIMEOUT:5000}
+
 #Open api swagger ui 
 springdoc: 
     api-docs: 
@@ -52,3 +71,6 @@ swg:
 sys:
     user:
         password: ${DEFAULT_PASS}
+
+email:
+    from: ${EMAIL_USERNAME}
