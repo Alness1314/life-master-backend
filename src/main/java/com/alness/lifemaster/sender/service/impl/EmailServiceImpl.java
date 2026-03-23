@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -25,7 +27,6 @@ import com.alness.lifemaster.utils.ApiCodes;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -36,27 +37,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
+    private final ResourceLoader resourceLoader;
 
     @Value("${email.from}")
     private String emailFrom;
 
     private final Handlebars handlebars = new Handlebars();
-
-    private final String baseDir = System.getProperty("user.dir") + File.separator + "assets" + File.separator;
-    private final String templatePath = baseDir + "templates" + File.separator;
-    private final String imgPath = baseDir + "img" + File.separator;
-
-    @PostConstruct
-    public void init() {
-        File templateDir = new File(templatePath);
-        File imgDir = new File(imgPath);
-        if (!templateDir.exists()) {
-            templateDir.mkdirs();
-        }
-        if (!imgDir.exists()) {
-            imgDir.mkdirs();
-        }
-    }
 
     @Override
     public ResponseDto sendEmail(EmailRequest request) {
@@ -134,6 +120,53 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private String loadTemplate(String templateName) {
+
+    if (templateName.contains(".")) {
+        throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                "El nombre no debe contener extensión.");
+    }
+
+    try {
+        Resource resource = resourceLoader.getResource("classpath:templates/" + templateName + ".hbs");
+
+        if (!resource.exists()) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                    "Plantilla no encontrada.");
+        }
+
+        return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    } catch (IOException e) {
+        throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                "Error al leer la plantilla.");
+    }
+}
+
+private FileSystemResource loadResourse(String imageName) {
+
+    if (imageName.contains(".")) {
+        throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                "El nombre no debe contener extensión.");
+    }
+
+    try {
+        Resource resource = resourceLoader.getResource("classpath:img/" + imageName + ".png");
+
+        if (!resource.exists()) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                    "Imagen no encontrada.");
+        }
+
+        return new FileSystemResource(resource.getFile());
+
+    } catch (IOException e) {
+        throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                "Error al cargar la imagen.");
+    }
+}
+
+/* 
+    private String loadTemplate2(String templateName) {
         // validar que tenga extencion
         if (templateName.contains(".")) {
             throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
@@ -163,7 +196,7 @@ public class EmailServiceImpl implements EmailService {
 
     }
 
-    private FileSystemResource loadResourse(String imageName) {
+    private FileSystemResource loadResourse2(String imageName) {
         try {
             // validar que tenga extencion
             if (imageName.contains(".")) {
@@ -188,7 +221,7 @@ public class EmailServiceImpl implements EmailService {
         }
 
     }
-
+*/
     private InputStreamSource getAttachment(String base64String) {
         byte[] resource = Base64.getDecoder().decode(base64String);
         return new ByteArrayResource(resource);
