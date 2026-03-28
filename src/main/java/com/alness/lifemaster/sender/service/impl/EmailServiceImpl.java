@@ -70,13 +70,11 @@ public class EmailServiceImpl implements EmailService {
             // 🔹 Aplicar variables
             String html = template.apply(request.getVariables());
 
-            // 🔹 Crear mensaje (UTF-8)
+            // 🔹 Crear mensaje
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // 🔥 AQUÍ ESTÁ LA CLAVE
             helper.setTo(request.getTo().toArray(new String[0]));
-
             helper.setSubject(request.getSubject());
             helper.setText(html, true);
             helper.setFrom(emailFrom);
@@ -85,7 +83,7 @@ public class EmailServiceImpl implements EmailService {
             if (request.getImagenes() != null && !request.getImagenes().isEmpty()) {
                 request.getImagenes().forEach((key, value) -> {
                     try {
-                        helper.addInline(value.getUniqueCID(), loadResourse(value.getNameResource()));
+                        helper.addInline(value.getUniqueCID(), loadResource(value.getNameResource()), "image/png");
                     } catch (MessagingException e) {
                         log.error("Error al cargar recurso inline: {}", value.getNameResource(), e);
                     }
@@ -104,7 +102,6 @@ public class EmailServiceImpl implements EmailService {
             // 🔹 Enviar
             mailSender.send(message);
 
-            // 🔥 LOG CORREGIDO
             log.info("Correo enviado a {}", request.getTo());
 
             return new ResponseDto("Correo enviado.", HttpStatus.ACCEPTED, true);
@@ -119,51 +116,60 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    // 🔹 Cargar plantilla desde resources
     private String loadTemplate(String templateName) {
 
-    if (templateName.contains(".")) {
-        throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
-                "El nombre no debe contener extensión.");
-    }
-
-    try {
-        Resource resource = resourceLoader.getResource("classpath:templates/" + templateName + ".hbs");
-
-        if (!resource.exists()) {
-            throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                    "Plantilla no encontrada.");
+        if (templateName.contains(".")) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    "El nombre no debe contener extensión.");
         }
 
-        return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        try {
+            String path = "classpath:templates/" + templateName + ".hbs";
+            log.info("Cargando template: {}", path);
 
-    } catch (IOException e) {
-        throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                "Error al leer la plantilla.");
-    }
-}
+            Resource resource = resourceLoader.getResource(path);
 
-private FileSystemResource loadResourse(String imageName) {
+            if (!resource.exists()) {
+                throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        "Plantilla no encontrada: " + path);
+            }
 
-    if (imageName.contains(".")) {
-        throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
-                "El nombre no debe contener extensión.");
-    }
+            return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
-    try {
-        Resource resource = resourceLoader.getResource("classpath:img/" + imageName + ".png");
-
-        if (!resource.exists()) {
-            throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                    "Imagen no encontrada.");
+        } catch (IOException e) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error al leer la plantilla.");
         }
-
-        return new FileSystemResource(resource.getFile());
-
-    } catch (IOException e) {
-        throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
-                "Error al cargar la imagen.");
     }
-}
+
+    // 🔥 FIX CLAVE: compatible con JAR (Railway)
+    private InputStreamSource loadResource(String imageName) {
+
+        try {
+            String path = "classpath:img/" + imageName;
+            log.info("Cargando imagen: {}", path);
+
+            Resource resource = resourceLoader.getResource(path);
+
+            if (!resource.exists()) {
+                throw new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        "Imagen no encontrada: " + path);
+            }
+
+            return new ByteArrayResource(resource.getInputStream().readAllBytes());
+
+        } catch (IOException e) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error al cargar la imagen.");
+        }
+    }
+
+    // 🔹 Adjuntos base64
+    private InputStreamSource getAttachment(String base64String) {
+        byte[] resource = Base64.getDecoder().decode(base64String);
+        return new ByteArrayResource(resource);
+    }
 
 /* 
     private String loadTemplate2(String templateName) {
@@ -222,9 +228,6 @@ private FileSystemResource loadResourse(String imageName) {
 
     }
 */
-    private InputStreamSource getAttachment(String base64String) {
-        byte[] resource = Base64.getDecoder().decode(base64String);
-        return new ByteArrayResource(resource);
-    }
+    
 
 }
