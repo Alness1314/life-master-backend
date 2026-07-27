@@ -22,4 +22,5 @@ public class PaymentResponse {
     private String paymentMethod;
     private Boolean isPaid;
     private String notes;
+    private UUID paymentMethodId;
 }

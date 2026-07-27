@@ -21,6 +21,7 @@ import com.alness.lifemaster.income.repository.IncomeRepository;
 import com.alness.lifemaster.income.service.IncomeService;
 import com.alness.lifemaster.income.specification.IncomeSpecification;
 import com.alness.lifemaster.mapper.GenericMapper;
+import com.alness.lifemaster.finance.account.FinancialAccountRepository;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
@@ -37,6 +38,7 @@ public class IncomeServiceImpl implements IncomeService {
     private final IncomeRepository incomeRepository;
     private final UserRepository userRepository;
     private final GenericMapper mapper;
+    private final FinancialAccountRepository accountRepository;
 
     @Override
     public List<IncomeResponse> find(String userId, Map<String, String> params) {
@@ -64,6 +66,8 @@ public class IncomeServiceImpl implements IncomeService {
                         () -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                                 String.format(Messages.NOT_FOUND, userId)));
         income.setUser(user);
+        income.setCurrency(request.getCurrency() == null ? "MXN" : request.getCurrency());
+        setAccount(income, UUID.fromString(userId), request);
         try {
             income = incomeRepository.save(income);
         } catch (DataIntegrityViolationException ex) {
@@ -94,6 +98,8 @@ public class IncomeServiceImpl implements IncomeService {
 
         // Mapear nuevos datos al ingreso existente
         mapper.map(request, existingIncome);
+        existingIncome.setCurrency(request.getCurrency() == null ? existingIncome.getCurrency() : request.getCurrency());
+        setAccount(existingIncome, UUID.fromString(userId), request);
 
         try {
             existingIncome = incomeRepository.save(existingIncome);
@@ -131,7 +137,20 @@ public class IncomeServiceImpl implements IncomeService {
     }
 
     private IncomeResponse mapperDto(IncomeEntity source) {
-        return mapper.map(source, IncomeResponse.class);
+        IncomeResponse response = mapper.map(source, IncomeResponse.class);
+        response.setAccountId(source.getAccount() == null ? null : source.getAccount().getId());
+        return response;
+    }
+
+    private void setAccount(IncomeEntity income, UUID userId, IncomeRequest request) {
+        income.setAccount(request.getAccountId() == null ? null
+                : accountRepository.findByIdAndUserIdAndErasedFalse(request.getAccountId(), userId)
+                        .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                                "Financial account not found: " + request.getAccountId())));
+        if (income.getAccount() != null && !income.getAccount().getCurrency().equals(income.getCurrency())) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    "Income currency must match the account currency.");
+        }
     }
 
     public Specification<IncomeEntity> filterWithParameters(Map<String, String> parameters) {

@@ -23,6 +23,8 @@ import com.alness.lifemaster.expenses.repository.ExpensesRepository;
 import com.alness.lifemaster.expenses.service.ExpensesService;
 import com.alness.lifemaster.expenses.specification.ExpensesSpecification;
 import com.alness.lifemaster.mapper.GenericMapper;
+import com.alness.lifemaster.finance.account.FinancialAccountRepository;
+import com.alness.lifemaster.finance.paymentmethod.PaymentMethodRepository;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
@@ -40,6 +42,8 @@ public class ExpensesServiceImpl implements ExpensesService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final GenericMapper mapper;
+    private final FinancialAccountRepository accountRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
 
     @Override
     public List<ExpensesResponse> find(String userId, Map<String, String> params) {
@@ -71,6 +75,8 @@ public class ExpensesServiceImpl implements ExpensesService {
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                         String.format(Messages.NOT_FOUND, request.getCategory())));
         expenses.setCategory(category);
+        expenses.setCurrency(request.getCurrency() == null ? "MXN" : request.getCurrency());
+        setFinancialLinks(expenses, UUID.fromString(userId), request);
         try {
             expenses = expensesRepository.save(expenses);
         } catch (DataIntegrityViolationException ex) {
@@ -108,6 +114,8 @@ public class ExpensesServiceImpl implements ExpensesService {
             mapper.map(request, existingExpense);
             existingExpense.setUser(user);
             existingExpense.setCategory(category);
+            existingExpense.setCurrency(request.getCurrency() == null ? existingExpense.getCurrency() : request.getCurrency());
+            setFinancialLinks(existingExpense, UUID.fromString(userId), request);
 
             // Guardar cambios
             existingExpense = expensesRepository.save(existingExpense);
@@ -147,7 +155,31 @@ public class ExpensesServiceImpl implements ExpensesService {
     }
 
     private ExpensesResponse mapperDto(ExpensesEntity expenses) {
-        return mapper.map(expenses, ExpensesResponse.class);
+        ExpensesResponse response = mapper.map(expenses, ExpensesResponse.class);
+        response.setAccountId(expenses.getAccount() == null ? null : expenses.getAccount().getId());
+        response.setPaymentMethodId(expenses.getPaymentMethod() == null ? null : expenses.getPaymentMethod().getId());
+        return response;
+    }
+
+    private void setFinancialLinks(ExpensesEntity expense, UUID userId, ExpensesRequest request) {
+        expense.setAccount(request.getAccountId() == null ? null
+                : accountRepository.findByIdAndUserIdAndErasedFalse(request.getAccountId(), userId)
+                        .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                                "Financial account not found: " + request.getAccountId())));
+        expense.setPaymentMethod(request.getPaymentMethodId() == null ? null
+                : paymentMethodRepository.findByIdAndUserIdAndErasedFalse(request.getPaymentMethodId(), userId)
+                        .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                                "Payment method not found: " + request.getPaymentMethodId())));
+        if (expense.getAccount() != null && !expense.getAccount().getCurrency().equals(expense.getCurrency())) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    "Expense currency must match the account currency.");
+        }
+        if (expense.getPaymentMethod() != null && expense.getPaymentMethod().getAccount() != null
+                && expense.getAccount() != null
+                && !expense.getPaymentMethod().getAccount().getId().equals(expense.getAccount().getId())) {
+            throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    "Payment method does not belong to the selected account.");
+        }
     }
 
     public Specification<ExpensesEntity> filterWithParameters(Map<String, String> parameters) {

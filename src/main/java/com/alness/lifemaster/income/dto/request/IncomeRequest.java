@@ -1,6 +1,7 @@
 package com.alness.lifemaster.income.dto.request;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -29,4 +30,7 @@ public class IncomeRequest {
     @NotBlank
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$")
     private String paymentDate;
+    private UUID accountId;
+    @Pattern(regexp = "^[A-Z]{3}$")
+    private String currency;
 }

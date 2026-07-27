@@ -3,6 +3,7 @@ package com.alness.lifemaster.debts.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import com.alness.lifemaster.finance.paymentmethod.PaymentMethodEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,6 +32,10 @@ public class PaymentsEntity {
 
     @Column(name = "payment_method", nullable = true, columnDefinition = "character varying(256)")
     private String paymentMethod;
+
+    @ManyToOne
+    @JoinColumn(name = "payment_method_id")
+    private PaymentMethodEntity paymentMethodEntity;
 
     @Column(name = "is_paid", nullable = false, columnDefinition = "boolean")
     private Boolean isPaid;

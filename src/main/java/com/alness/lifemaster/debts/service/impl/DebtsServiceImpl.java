@@ -27,6 +27,7 @@ import com.alness.lifemaster.debts.entity.DebtsEntity;
 import com.alness.lifemaster.debts.entity.PaymentsEntity;
 import com.alness.lifemaster.debts.repository.DebtsRespository;
 import com.alness.lifemaster.debts.service.DebtsService;
+import com.alness.lifemaster.debts.service.DebtCalculator;
 import com.alness.lifemaster.debts.spec.DebtsSpec;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.users.entity.UserEntity;
@@ -35,6 +36,7 @@ import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.DateTimeUtils;
 import com.alness.lifemaster.utils.FuncUtils;
 import com.alness.lifemaster.utils.LoggerUtil;
+import com.alness.lifemaster.finance.paymentmethod.PaymentMethodService;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class DebtsServiceImpl implements DebtsService {
 
     private final DebtsRespository debtsRespository;
     private final UserRepository userRepository;
+    private final PaymentMethodService paymentMethodService;
 
     private ModelMapper modelMapper = new ModelMapper();
 
@@ -94,12 +97,15 @@ public class DebtsServiceImpl implements DebtsService {
                     .map(payment -> {
                         PaymentsEntity entity = modelMapper.map(payment, PaymentsEntity.class);
                         entity.setDebts(debts);
+                        entity.setPaymentMethodEntity(payment.getPaymentMethodId() == null ? null
+                                : paymentMethodService.findOwned(uuid, payment.getPaymentMethodId()));
                         return entity;
                     })
                     .toList();
 
             debts.setPayments(paymentsList);
 
+            DebtCalculator.synchronize(debts);
             return mapperDto(debtsRespository.save(debts));
 
         } catch (DataIntegrityViolationException ex) {
@@ -149,9 +155,7 @@ public class DebtsServiceImpl implements DebtsService {
             existingDebt.setCurrency(request.getCurrency());
             existingDebt.setHasInterest(request.getHasInterest());
             existingDebt.setNumberOfPayments(request.getNumberOfPayments());
-            existingDebt.setPaymentsMade(request.getPaymentsMade());
             existingDebt.setDueDate(DateTimeUtils.parseToLocalDate(request.getDueDate()));
-            existingDebt.setIsFullyPaid(request.getIsFullyPaid());
             existingDebt.setNotes(request.getNotes());
 
             // Limpiar alimentos anteriores
@@ -162,12 +166,15 @@ public class DebtsServiceImpl implements DebtsService {
                     .map(p -> {
                         PaymentsEntity pe = modelMapper.map(p, PaymentsEntity.class);
                         pe.setDebts(existingDebt);
+                        pe.setPaymentMethodEntity(p.getPaymentMethodId() == null ? null
+                                : paymentMethodService.findOwned(UUID.fromString(userId), p.getPaymentMethodId()));
                         return pe;
                     })
                     .toList();
 
             existingDebt.getPayments().addAll(newPayments);
 
+            DebtCalculator.synchronize(existingDebt);
             return mapperDto(debtsRespository.save(existingDebt));
 
         } catch (DataIntegrityViolationException ex) {
@@ -198,7 +205,20 @@ public class DebtsServiceImpl implements DebtsService {
     }
 
     private DebtsResponse mapperDto(DebtsEntity source) {
-        return modelMapper.map(source, DebtsResponse.class);
+        DebtsResponse response = modelMapper.map(source, DebtsResponse.class);
+        response.setPaymentsMade(DebtCalculator.paymentsMade(source));
+        response.setIsFullyPaid(DebtCalculator.outstandingAmount(source).signum() == 0);
+        response.setPaidAmount(DebtCalculator.paidAmount(source));
+        response.setOutstandingAmount(DebtCalculator.outstandingAmount(source));
+        response.setProgressPercentage(DebtCalculator.progressPercentage(source));
+        if (response.getPayments() != null && source.getPayments() != null) {
+            for (int i = 0; i < Math.min(response.getPayments().size(), source.getPayments().size()); i++) {
+                PaymentsEntity payment = source.getPayments().get(i);
+                response.getPayments().get(i).setPaymentMethodId(payment.getPaymentMethodEntity() == null ? null
+                        : payment.getPaymentMethodEntity().getId());
+            }
+        }
+        return response;
     }
 
     public Specification<DebtsEntity> filterWithParameters(Map<String, String> params) {

@@ -1,6 +1,7 @@
 package com.alness.lifemaster.expenses.dto.request;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -43,4 +44,11 @@ public class ExpensesRequest {
     
     @NotNull
     private Boolean paymentStatus;
+
+    private UUID accountId;
+
+    private UUID paymentMethodId;
+
+    @Pattern(regexp = "^[A-Z]{3}$")
+    private String currency;
 }

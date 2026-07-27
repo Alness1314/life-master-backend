@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,4 +50,22 @@ public class DebtsRequest {
     @NotNull
     @Valid
     private List<PaymentRequest> payments;
+
+    @AssertTrue(message = "paymentsMade must not exceed numberOfPayments")
+    public boolean isPaymentCountValid() {
+        return paymentsMade == null || numberOfPayments == null || paymentsMade <= numberOfPayments;
+    }
+
+    @AssertTrue(message = "Paid amounts must not exceed totalAmount")
+    public boolean isPaidAmountValid() {
+        if (payments == null || totalAmount == null) {
+            return true;
+        }
+        BigDecimal paid = payments.stream()
+                .filter(payment -> Boolean.TRUE.equals(payment.getIsPaid()))
+                .map(PaymentRequest::getAmountPaid)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return paid.compareTo(totalAmount) <= 0;
+    }
 }

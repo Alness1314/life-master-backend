@@ -29,4 +29,7 @@ public class ExpensesResponse {
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
     private Boolean erased;
+    private UUID accountId;
+    private UUID paymentMethodId;
+    private String currency;
 }

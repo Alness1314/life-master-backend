@@ -32,4 +32,7 @@ public class DebtsResponse {
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
     private Boolean erased;
+    private BigDecimal paidAmount;
+    private BigDecimal outstandingAmount;
+    private BigDecimal progressPercentage;
 }

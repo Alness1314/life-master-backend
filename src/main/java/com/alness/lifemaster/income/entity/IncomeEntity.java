@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.util.UUID;
 
 import com.alness.lifemaster.users.entity.UserEntity;
+import com.alness.lifemaster.finance.account.FinancialAccountEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,12 +41,19 @@ public class IncomeEntity {
     @Column(nullable = false, columnDefinition = "numeric(21,8)")
     private BigDecimal amount;
 
+    @Column(nullable = false, length = 3)
+    private String currency;
+
     @Column(name = "payment_date", nullable = false, columnDefinition = "date")
     private LocalDate paymentDate;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    private FinancialAccountEntity account;
 
     @Column(name = "create_at", nullable = false, columnDefinition = "timestamp without time zone")
     private LocalDateTime createAt;

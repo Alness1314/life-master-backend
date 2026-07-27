@@ -25,4 +25,6 @@ public class IncomeResponse {
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
     private Boolean erased;
+    private UUID accountId;
+    private String currency;
 }

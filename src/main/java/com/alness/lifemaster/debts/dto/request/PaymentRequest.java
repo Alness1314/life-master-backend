@@ -1,6 +1,7 @@
 package com.alness.lifemaster.debts.dto.request;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,4 +33,5 @@ public class PaymentRequest {
     private Boolean isPaid;
     @Size(max = 2000)
     private String notes;
+    private UUID paymentMethodId;
 }
