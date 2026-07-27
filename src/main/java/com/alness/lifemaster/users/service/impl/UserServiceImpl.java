@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.alness.lifemaster.common.dto.ResponseServerDto;
+import com.alness.lifemaster.common.dto.ValueExistenceResponse;
+import com.alness.lifemaster.common.validation.GenericExistenceValidator;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
@@ -27,6 +29,7 @@ import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.users.dto.CustomUser;
 import com.alness.lifemaster.users.dto.request.UserRequest;
+import com.alness.lifemaster.users.dto.request.UserSelfUpdateRequest;
 import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
@@ -46,9 +49,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final GenericMapper mapper;
+    private final GenericExistenceValidator existenceValidator;
 
     @Override
     public UserResponse save(UserRequest request) {
+        if (userRepository.existsByUsernameAndErasedFalse(request.getUsername().trim())) {
+            throw new RestExceptionHandler(
+                    ApiCodes.API_CODE_409,
+                    HttpStatus.CONFLICT,
+                    Messages.USER_ALREADY_REGISTERED);
+        }
         UserEntity newUser = mapper.map(request, UserEntity.class);
         try {
             if (request.getProfiles() == null) {
@@ -67,13 +77,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             } else {
                 newUser.setId(null);
             }
-            newUser = userRepository.save(newUser);
+            newUser = userRepository.saveAndFlush(newUser);
             return mapperDto(newUser);
         } catch (DataIntegrityViolationException ex) {
             LoggerUtil.logError(ex);
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-                throw new RestExceptionHandler(ApiCodes.API_CODE_412,
-                        HttpStatus.PRECONDITION_FAILED, Messages.USER_ALREADY_REGISTERED);
+                throw new RestExceptionHandler(ApiCodes.API_CODE_409,
+                        HttpStatus.CONFLICT, Messages.USER_ALREADY_REGISTERED);
             }
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, Messages.DATA_INTEGRITY, ex);
@@ -104,8 +114,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UserResponse update(String id, UserRequest request) {
         try {
+            UUID userId = UUID.fromString(id);
+            if (userRepository.existsByUsernameAndErasedFalseAndIdNot(request.getUsername().trim(), userId)) {
+                throw new RestExceptionHandler(
+                        ApiCodes.API_CODE_409,
+                        HttpStatus.CONFLICT,
+                        Messages.USER_ALREADY_REGISTERED);
+            }
             // Buscar el usuario existente por su ID
-            UserEntity existingUser = userRepository.findById(UUID.fromString(id))
+            UserEntity existingUser = userRepository.findById(userId)
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, id)));
 
@@ -133,7 +150,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             }
 
             // Guardar los cambios en la base de datos
-            existingUser = userRepository.save(existingUser);
+            existingUser = userRepository.saveAndFlush(existingUser);
 
             // Mapear y devolver la respuesta
             return mapperDto(existingUser);
@@ -141,8 +158,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         } catch (DataIntegrityViolationException ex) {
             LoggerUtil.logError(ex);
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-                throw new RestExceptionHandler(ApiCodes.API_CODE_412,
-                        HttpStatus.PRECONDITION_FAILED, Messages.USER_ALREADY_REGISTERED);
+                throw new RestExceptionHandler(ApiCodes.API_CODE_409,
+                        HttpStatus.CONFLICT, Messages.USER_ALREADY_REGISTERED);
             }
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, Messages.DATA_INTEGRITY, ex);
@@ -154,6 +171,64 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, Messages.ERROR_ENTITY_UPDATE, ex);
         }
+    }
+
+    @Override
+    public UserResponse updateSelf(UUID userId, UserSelfUpdateRequest request) {
+        UserEntity existingUser = userRepository.findById(userId)
+                .filter(user -> !Boolean.TRUE.equals(user.getErased()))
+                .orElseThrow(() -> new RestExceptionHandler(
+                        ApiCodes.API_CODE_404,
+                        HttpStatus.NOT_FOUND,
+                        Messages.NOT_FOUND_BASIC));
+
+        boolean hasChanges = false;
+        if (request.getFullName() != null) {
+            existingUser.setFullName(request.getFullName().trim());
+            hasChanges = true;
+        }
+        if (request.getPassword() != null) {
+            existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            hasChanges = true;
+        }
+        if (request.getImageId() != null) {
+            existingUser.setImageId(UUID.fromString(request.getImageId()));
+            hasChanges = true;
+        }
+        if (!hasChanges) {
+            throw new RestExceptionHandler(
+                    ApiCodes.API_CODE_400,
+                    HttpStatus.BAD_REQUEST,
+                    "Debes enviar al menos un campo permitido para actualizar.");
+        }
+
+        try {
+            return mapperDto(userRepository.saveAndFlush(existingUser));
+        } catch (DataIntegrityViolationException ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(
+                    ApiCodes.API_CODE_400,
+                    HttpStatus.BAD_REQUEST,
+                    Messages.DATA_INTEGRITY);
+        } catch (RestExceptionHandler ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LoggerUtil.logError(ex);
+            throw new RestExceptionHandler(
+                    ApiCodes.API_CODE_500,
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    Messages.ERROR_ENTITY_UPDATE);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ValueExistenceResponse validateExistingValues(Map<String, String> values, UUID excludeId) {
+        return existenceValidator.validate(
+                values,
+                Map.of("username", username -> excludeId == null
+                        ? userRepository.existsByUsernameAndErasedFalse(username)
+                        : userRepository.existsByUsernameAndErasedFalseAndIdNot(username, excludeId)));
     }
 
     @Override

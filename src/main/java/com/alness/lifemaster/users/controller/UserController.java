@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alness.lifemaster.common.dto.ResponseServerDto;
+import com.alness.lifemaster.common.dto.ValueExistenceResponse;
 import com.alness.lifemaster.users.dto.request.UserRequest;
 import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.service.UserService;
@@ -48,6 +50,22 @@ public class UserController {
     public ResponseEntity<UserResponse> postMethodName(@Valid @RequestBody UserRequest request) {
         UserResponse response = userService.save(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/validacion-valores-existentes")
+    public ResponseEntity<ValueExistenceResponse> validateExistingValues(
+            @RequestParam Map<String, String> parameters) {
+        String excludeIdValue = parameters.remove("excludeId");
+        java.util.UUID excludeId = excludeIdValue == null || excludeIdValue.isBlank()
+                ? null
+                : java.util.UUID.fromString(excludeIdValue);
+        return ResponseEntity.ok(userService.validateExistingValues(parameters, excludeId));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> update(@PathVariable String id, @Valid @RequestBody UserRequest request) {
+        UserResponse response = userService.update(id, request);
+        return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{id}")

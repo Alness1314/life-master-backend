@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.vault.dto.request.VaultRequest;
 import com.alness.lifemaster.vault.dto.response.VaultResponse;
+import com.alness.lifemaster.vault.dto.response.VaultSecretResponse;
 import com.alness.lifemaster.vault.service.VaultService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,13 @@ public class VaultController {
     public ResponseEntity<VaultResponse> findOne(@PathVariable String userId, @PathVariable String id) {
         VaultResponse response = vaultService.findOne(userId, id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+    }
+
+    @GetMapping("/{userId}/vault/{id}/password")
+    public ResponseEntity<VaultSecretResponse> revealPassword(
+            @PathVariable String userId,
+            @PathVariable String id) {
+        return ResponseEntity.ok(vaultService.revealPassword(userId, id));
     }
 
     @PostMapping("/{userId}/vault")

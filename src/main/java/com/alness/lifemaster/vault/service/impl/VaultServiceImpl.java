@@ -25,6 +25,7 @@ import com.alness.lifemaster.utils.LoggerUtil;
 import com.alness.lifemaster.utils.TextEncrypterUtil;
 import com.alness.lifemaster.vault.dto.request.VaultRequest;
 import com.alness.lifemaster.vault.dto.response.VaultResponse;
+import com.alness.lifemaster.vault.dto.response.VaultSecretResponse;
 import com.alness.lifemaster.vault.entity.VaultEntity;
 import com.alness.lifemaster.vault.repository.VaultRepository;
 import com.alness.lifemaster.vault.service.VaultService;
@@ -56,6 +57,23 @@ public class VaultServiceImpl implements VaultService {
                 .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                         String.format(Messages.NOT_FOUND, id)));
         return mapperDto(vault);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VaultSecretResponse revealPassword(String userId, String id) {
+        VaultEntity vault = vaultRepository
+                .findOne(filterWithParameters(Map.of(
+                        Filters.KEY_ID, id,
+                        Filters.KEY_USER, userId)))
+                .orElseThrow(() -> new RestExceptionHandler(
+                        ApiCodes.API_CODE_404,
+                        HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
+
+        SecretKey key = TextEncrypterUtil.stringToKey(vault.getKey());
+        return new VaultSecretResponse(
+                TextEncrypterUtil.decrypt(vault.getPasswordEncrypted(), key));
     }
 
     @Override
@@ -146,7 +164,9 @@ public class VaultServiceImpl implements VaultService {
     }
 
     private VaultResponse mapperDto(VaultEntity source) {
-        return mapper.map(source, VaultResponse.class);
+        VaultResponse response = mapper.map(source, VaultResponse.class);
+        response.setPasswordEncrypted(null);
+        return response;
     }
 
     public Specification<VaultEntity> filterWithParameters(Map<String, String> parameters) {

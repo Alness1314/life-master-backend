@@ -34,7 +34,7 @@ public class UserEntity {
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
-    @Column(nullable = false, unique = true, columnDefinition = "character varying(64)")
+    @Column(nullable = false, columnDefinition = "character varying(64)")
     private String username;
 
     @Column(nullable = false, columnDefinition = "character varying(128)")

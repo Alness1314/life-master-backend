@@ -22,13 +22,17 @@ public class UserRequest {
     @Email
     @Size(max = 256)
     private String username;
+
     @NotBlank
     @Size(min = 12, max = 128)
     private String password;
+
     @NotBlank
     @Size(max = 256)
     private String fullName;
+
     private String imageId;
+
     @NotEmpty
     private List<String> profiles;
 }

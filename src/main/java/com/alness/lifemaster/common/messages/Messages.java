@@ -15,6 +15,8 @@ public class Messages {
     public static final String ERROR_ENTITY_UPDATE = "Se produjo un error inesperado al actualizar el registro.";
     public static final String ERROR_ENTITY_DELETE = "Se produjo un error inesperado al eliminar el registro.";
     public static final String ERROR_FILE_DOWNLOAD = "Se produjo un error inesperado al descargar el archivo.";
+    public static final String INTERNAL_SERVER_ERROR = "Se produjo un error interno. Intenta nuevamente más tarde.";
+    public static final String DATA_CONFLICT = "El registro ya existe o entra en conflicto con los datos actuales.";
     public static final String ENTITY_DELETE = "El recurso con id: [%s] fue eliminado";
     public static final String NOT_FOUND = "El recurso solicitado con id o nombre: [%s] no fue encontrado.";
     public static final String NOT_FOUND_BASIC = "El recurso solicitado no fue encontrado.";
@@ -23,7 +25,7 @@ public class Messages {
     public static final String DATA_ACCESS_SYNTAX = "Error en la sintaxis de acceso a datos.";
     public static final String FORBIDEN_UPDATE_DATA = "El usuario con id [%s] no tiene permiso para actualizar esta información.";
 
-    public static final String USER_ALREADY_REGISTERED = "El nombre de usuario ya fue registrado.";
+    public static final String USER_ALREADY_REGISTERED = "El correo electrónico ya está registrado.";
     public static final String MODULE_NOT_PARENT = "El módulo con id: [%s] no está marcado como padre.";
 
     private Messages() {

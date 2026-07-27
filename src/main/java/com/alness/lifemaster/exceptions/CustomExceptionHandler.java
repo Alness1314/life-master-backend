@@ -3,6 +3,7 @@ package com.alness.lifemaster.exceptions;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,7 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import com.alness.lifemaster.exceptions.dto.ErrorResponse;
+import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.utils.ApiCodes;
+import com.alness.lifemaster.utils.LoggerUtil;
 
 @RestControllerAdvice
 public class CustomExceptionHandler {
@@ -42,8 +45,22 @@ public class CustomExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> runtimeExceptionHandler(RuntimeException ex) {
-        ErrorResponse error = ErrorResponse.builder().code(ApiCodes.API_CODE_500).message(ex.getMessage()).build();
+        LoggerUtil.logError(ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .code(ApiCodes.API_CODE_500)
+                .message(Messages.INTERNAL_SERVER_ERROR)
+                .build();
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> dataIntegrityViolationExceptionHandler(DataIntegrityViolationException ex) {
+        LoggerUtil.logError(ex);
+        ErrorResponse error = ErrorResponse.builder()
+                .code(ApiCodes.API_CODE_409)
+                .message(Messages.DATA_CONFLICT)
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(RestExceptionHandler.class)
