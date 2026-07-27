@@ -3,7 +3,6 @@ package com.alness.lifemaster.expenses.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,13 +22,14 @@ import com.alness.lifemaster.expenses.service.ExpensesService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
 @Tag(name = "Expenses", description = ".")
+@RequiredArgsConstructor
 public class ExpensesController {
-    @Autowired
-    private ExpensesService expensesService;
+    private final ExpensesService expensesService;
 
     @GetMapping("/{userId}/expenses")
     public ResponseEntity<List<ExpensesResponse>> findAll(@PathVariable String userId,
@@ -53,7 +53,7 @@ public class ExpensesController {
 
     @PutMapping("/{userId}/expenses/{id}")
     public ResponseEntity<ExpensesResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody ExpensesRequest request) {
+            @Valid @RequestBody ExpensesRequest request) {
         ExpensesResponse response = expensesService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

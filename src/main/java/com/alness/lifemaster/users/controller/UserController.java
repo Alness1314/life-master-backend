@@ -3,9 +3,9 @@ package com.alness.lifemaster.users.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,13 +21,16 @@ import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.service.UserService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
 @Tag(name = "Users", description = ".")
+@PreAuthorize("hasAuthority('Administrator')")
+@RequiredArgsConstructor
 public class UserController {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<UserResponse>> findAll(@RequestParam Map<String, String> param) {
@@ -42,7 +45,7 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> postMethodName(@RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> postMethodName(@Valid @RequestBody UserRequest request) {
         UserResponse response = userService.save(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

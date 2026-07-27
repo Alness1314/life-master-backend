@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -66,6 +67,7 @@ public class JwtValidationFilter extends BasicAuthenticationFilter{
 
             UsernamePasswordAuthenticationToken autentication = new UsernamePasswordAuthenticationToken(
                     claims.getSubject(), null, authorities);
+            autentication.setDetails(UUID.fromString(claims.get("id", String.class)));
 
             SecurityContextHolder.getContext().setAuthentication(autentication);
             chain.doFilter(request, response);
@@ -85,10 +87,11 @@ public class JwtValidationFilter extends BasicAuthenticationFilter{
         log.error(message, e);
         Map<String, String> bodyResponse = new HashMap<>();
         bodyResponse.put("code", ApiCodes.API_CODE + status);
-        bodyResponse.put("error", e.getMessage());
-        bodyResponse.put("message", message);
-        response.getWriter().write(new ObjectMapper().writeValueAsString(bodyResponse));
-        response.setStatus(status);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            bodyResponse.put("error", "Unauthorized");
+            bodyResponse.put("message", message);
+            response.setStatus(status);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(new ObjectMapper().writeValueAsString(bodyResponse));
     }
 }

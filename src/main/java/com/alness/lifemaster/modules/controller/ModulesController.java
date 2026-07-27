@@ -3,9 +3,9 @@ package com.alness.lifemaster.modules.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,13 +22,15 @@ import com.alness.lifemaster.modules.dto.response.ModuleResponse;
 import com.alness.lifemaster.modules.service.ModuleService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/modules")
 @Tag(name = "Modules", description = ".")
+@PreAuthorize("hasAuthority('Administrator')")
+@RequiredArgsConstructor
 public class ModulesController {
-    @Autowired
-    private ModuleService moduleService;
+    private final ModuleService moduleService;
     
     @GetMapping
     public ResponseEntity<List<ModuleResponse>> findAll(@RequestParam Map<String, String> param) {

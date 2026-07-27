@@ -15,6 +15,7 @@ import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
@@ -40,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class DebtsServiceImpl implements DebtsService {
 
     private final DebtsRespository debtsRespository;
@@ -186,7 +188,13 @@ public class DebtsServiceImpl implements DebtsService {
 
     @Override
     public ResponseServerDto delete(String userId, String id) {
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        DebtsEntity debt = debtsRespository
+                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
+        debt.setErased(true);
+        debtsRespository.save(debt);
+        return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
     }
 
     private DebtsResponse mapperDto(DebtsEntity source) {

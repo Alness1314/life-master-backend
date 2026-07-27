@@ -1,6 +1,7 @@
 package com.alness.lifemaster.vault.entity;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.alness.lifemaster.users.entity.UserEntity;
@@ -61,13 +62,13 @@ public class VaultEntity {
 
     @PrePersist()
     public void init() {
-        setCreateAt(LocalDateTime.now());
-        setUpdateAt(LocalDateTime.now());
+        setCreateAt(LocalDateTime.now(ZoneId.systemDefault()));
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
         setErased(false);
     }
 
     @PreUpdate
     private void preUpdate(){
-        setUpdateAt(LocalDateTime.now());
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
     }
 }

@@ -1,6 +1,7 @@
 package com.alness.lifemaster.users.entity;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -69,7 +70,7 @@ public class UserEntity {
     public void prePersist(){
         setVerified(false);
         setErased(false);
-        setCreated(LocalDateTime.now());
-        setUpdated(LocalDateTime.now());
+        setCreated(LocalDateTime.now(ZoneId.systemDefault()));
+        setUpdated(LocalDateTime.now(ZoneId.systemDefault()));
     }
 }

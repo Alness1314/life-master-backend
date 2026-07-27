@@ -53,7 +53,7 @@ public class DebtsController {
 
     @PutMapping("/{userId}/debts/{id}")
     public ResponseEntity<DebtsResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody DebtsRequest request) {
+            @Valid @RequestBody DebtsRequest request) {
         DebtsResponse response = debtsService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

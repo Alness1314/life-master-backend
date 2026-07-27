@@ -98,7 +98,6 @@ public class GenericMapper {
         try {
             return mapper.map(source, targetClass);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new MappingException(
                     "Error al mapear " + source.getClass().getSimpleName() + " a " + targetClass.getSimpleName(), e);
         }
@@ -109,7 +108,6 @@ public class GenericMapper {
             mapper.map(source, destination);
             return destination;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new MappingException(
                     "Error al mapear de " + source.getClass().getSimpleName() +
                             " a " + destination.getClass().getSimpleName(),

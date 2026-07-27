@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class NutritionServiceImpl implements NutritionService {
     private final NutritionRepository nutritionRepository;
     private final UserRepository userRepository;
@@ -158,7 +160,13 @@ public class NutritionServiceImpl implements NutritionService {
 
     @Override
     public ResponseServerDto delete(String userId, String id) {
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        NutritionEntity nutrition = nutritionRepository
+                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
+        nutrition.setErased(true);
+        nutritionRepository.save(nutrition);
+        return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
     }
 
     private NutritionResponse mapperDto(NutritionEntity source) {

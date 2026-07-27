@@ -8,10 +8,8 @@ import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
-@Slf4j
 public class JwtTokenConfig {
     private Key secretKey;
 
@@ -23,7 +21,6 @@ public class JwtTokenConfig {
 
     @PostConstruct
     public void init() {
-        log.info("Secret key: {}", secret);
         try {
             secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {

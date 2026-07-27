@@ -53,7 +53,7 @@ public class NutritionController {
 
     @PutMapping("/{userId}/nutrition/{id}")
     public ResponseEntity<NutritionResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody NutritionRequest request) {
+            @Valid @RequestBody NutritionRequest request) {
         NutritionResponse response = nutritionService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

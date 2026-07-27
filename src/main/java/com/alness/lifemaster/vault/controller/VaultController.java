@@ -3,7 +3,6 @@ package com.alness.lifemaster.vault.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,13 +22,14 @@ import com.alness.lifemaster.vault.service.VaultService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
 @Tag(name = "Vault", description = ".")
+@RequiredArgsConstructor
 public class VaultController {
-    @Autowired
-    private VaultService vaultService;
+    private final VaultService vaultService;
 
     @GetMapping("/{userId}/vault")
     public ResponseEntity<List<VaultResponse>> findAll(@PathVariable String userId,
@@ -52,7 +52,7 @@ public class VaultController {
 
     @PutMapping("/{userId}/vault/{id}")
     public ResponseEntity<VaultResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody VaultRequest request) {
+            @Valid @RequestBody VaultRequest request) {
         VaultResponse response = vaultService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

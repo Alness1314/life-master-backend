@@ -3,9 +3,9 @@ package com.alness.lifemaster.categories.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,13 +23,16 @@ import com.alness.lifemaster.common.dto.ResponseServerDto;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/category")
 @Tag(name = "Categories", description = ".")
+@PreAuthorize("hasAuthority('Administrator')")
+@RequiredArgsConstructor
 public class CategoryController {
-    @Autowired
-    private CategoryService categoryService;
+    
+    private final CategoryService categoryService;
 
     @GetMapping()
     public ResponseEntity<List<CategoryResponse>> findAll(@RequestParam Map<String, String> parameters) {
@@ -50,7 +53,7 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponse> update(@PathVariable String id, @RequestBody CategoryRequest request) {
+    public ResponseEntity<CategoryResponse> update(@PathVariable String id, @Valid @RequestBody CategoryRequest request) {
         CategoryResponse response = categoryService.update(id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

@@ -53,7 +53,7 @@ public class ExercisesController {
 
     @PutMapping("/{userId}/exercises/{id}")
     public ResponseEntity<ExercisesResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody ExercisesRequest request) {
+            @Valid @RequestBody ExercisesRequest request) {
         ExercisesResponse response = exercisesService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

@@ -1,6 +1,7 @@
 package com.alness.lifemaster.profiles.entity;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -52,8 +53,8 @@ public class ProfileEntity {
     @PrePersist
     public void prePersist() {
         setErased(false);
-        setCreated(LocalDateTime.now());
-        setUpdated(LocalDateTime.now());
+        setCreated(LocalDateTime.now(ZoneId.systemDefault()));
+        setUpdated(LocalDateTime.now(ZoneId.systemDefault()));
     }
 
     @Override

@@ -3,7 +3,6 @@ package com.alness.lifemaster.app.service.impl;
 import java.util.Collections;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,18 +23,15 @@ import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AppConfigServiceImpl implements AppConfigService {
-    @Autowired
-    private ProfileService profileService;
-
-    @Autowired
-    private UserService userService;
-
-    @Autowired
+    private final ProfileService profileService;
+    private final UserService userService;
     private DecodeJwtService jwtService;
 
     @Value("${sys.user.password}")

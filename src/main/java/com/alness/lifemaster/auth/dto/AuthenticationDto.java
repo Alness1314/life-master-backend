@@ -15,5 +15,6 @@ import lombok.ToString;
 @ToString
 public class AuthenticationDto {
     private String username;
+    @ToString.Exclude
     private String password;
 }

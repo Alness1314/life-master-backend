@@ -3,7 +3,6 @@ package com.alness.lifemaster.notes.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,13 +22,14 @@ import com.alness.lifemaster.notes.service.NotesService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
 @Tag(name = "Notes", description = ".")
+@RequiredArgsConstructor
 public class NotesController {
-    @Autowired
-    private NotesService notesService;
+    private final NotesService notesService;
 
     @GetMapping("/{userId}/notes")
     public ResponseEntity<List<NotesResponse>> findAll(@PathVariable String userId,
@@ -53,7 +53,7 @@ public class NotesController {
 
     @PutMapping("/{userId}/notes/{id}")
     public ResponseEntity<NotesResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody NotesRequest request) {
+            @Valid @RequestBody NotesRequest request) {
         NotesResponse response = notesService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

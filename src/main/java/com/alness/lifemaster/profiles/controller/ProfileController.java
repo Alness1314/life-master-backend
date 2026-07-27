@@ -3,9 +3,9 @@ package com.alness.lifemaster.profiles.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,13 +20,15 @@ import com.alness.lifemaster.profiles.dto.response.ProfileResponse;
 import com.alness.lifemaster.profiles.service.ProfileService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/profiles")
 @Tag(name = "Profiles", description = ".")
+@PreAuthorize("hasAuthority('Administrator')")
+@RequiredArgsConstructor
 public class ProfileController {
-    @Autowired
-    private ProfileService profileService;
+    private final ProfileService profileService;
 
     @GetMapping
     public ResponseEntity<List<ProfileResponse>> findAll(@RequestParam Map<String, String> param) {

@@ -20,7 +20,6 @@ import lombok.Setter;
 public class UserResponse {
     private UUID id;
     private String username;
-    private String password;
     private String fullName;
     private UUID imageId;
     private List<ProfileResponse> profiles;

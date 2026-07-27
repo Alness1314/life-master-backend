@@ -3,6 +3,7 @@ package com.alness.lifemaster.assistance.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.alness.lifemaster.users.entity.UserEntity;
@@ -63,12 +64,12 @@ public class AssistanceEntity {
 
     @PrePersist
     private void init(){
-        setCreateAt(LocalDateTime.now());
-        setUpdateAt(LocalDateTime.now());
+        setCreateAt(LocalDateTime.now(ZoneId.systemDefault()));
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
     }
 
     @PreUpdate
     private void preUpdate(){
-        setUpdateAt(LocalDateTime.now());
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
     }
 }

@@ -1,0 +1,44 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:lifemaster;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  flyway:
+    enabled: false
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  mail:
+    host: localhost
+    port: 2525
+    username: test@example.com
+    password: test-password
+
+api:
+  prefix: /api/v1
+
+jwt:
+  secret: test-secret-key-that-is-long-enough-for-hs256
+
+swg:
+  server:
+    url: http://localhost
+    description: Test
+
+sys:
+  user:
+    password: test-admin-password
+
+email:
+  from: test@example.com
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

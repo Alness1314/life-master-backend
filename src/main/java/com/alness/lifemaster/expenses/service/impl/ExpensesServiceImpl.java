@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.alness.lifemaster.categories.entity.CategoryEntity;
 import com.alness.lifemaster.categories.repository.CategoryRepository;
@@ -32,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ExpensesServiceImpl implements ExpensesService {
 
     private final ExpensesRepository expensesRepository;
@@ -87,7 +89,8 @@ public class ExpensesServiceImpl implements ExpensesService {
     public ExpensesResponse update(String userId, String id, ExpensesRequest request) {
         try {
             // Buscar gasto existente
-            ExpensesEntity existingExpense = expensesRepository.findById(UUID.fromString(id))
+            ExpensesEntity existingExpense = expensesRepository
+                    .findOne(filterWithParameters(Map.of(Filters.KEY_ID, id, Filters.KEY_USER, userId)))
                     .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                             String.format(Messages.NOT_FOUND, id)));
 

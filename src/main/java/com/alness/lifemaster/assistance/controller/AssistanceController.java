@@ -3,7 +3,6 @@ package com.alness.lifemaster.assistance.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,14 +21,17 @@ import com.alness.lifemaster.assistance.service.AssistanceService;
 import com.alness.lifemaster.common.dto.ResponseServerDto;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
 @Tag(name = "Assistance", description = ".")
+@RequiredArgsConstructor
 public class AssistanceController {
-    @Autowired
-    private AssistanceService assistanceService;
+    private final AssistanceService assistanceService;
 
     @GetMapping("/{userId}/assistance")
     public ResponseEntity<List<AssistanceResponse>> findAll(@PathVariable String userId,
@@ -46,14 +48,14 @@ public class AssistanceController {
 
     @PostMapping("/{userId}/assistance")
     public ResponseEntity<AssistanceResponse> postMethodName(@PathVariable String userId,
-            @RequestBody AssistanceRequest request) {
+            @Valid @RequestBody AssistanceRequest request) {
         AssistanceResponse response = assistanceService.save(userId, request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PutMapping("/{userId}/assistance/{id}")
     public ResponseEntity<AssistanceResponse> putMethodName(@PathVariable String userId,
-            @PathVariable String id, @RequestBody AssistanceRequest request) {
+            @PathVariable String id, @Valid @RequestBody AssistanceRequest request) {
         AssistanceResponse response = assistanceService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

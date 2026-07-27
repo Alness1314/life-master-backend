@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.alness.lifemaster.assistance.dto.request.AssistanceRequest;
 import com.alness.lifemaster.assistance.dto.response.AssistanceResponse;
@@ -31,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AssistanceServiceImpl implements AssistanceService {
     private final AssistanceRepository assistanceRepository;
     private final UserRepository userRepository;
@@ -83,7 +85,8 @@ public class AssistanceServiceImpl implements AssistanceService {
 
         try {
             // Buscar la asistencia existente por su ID
-            AssistanceEntity existingAssistance = assistanceRepository.findById(UUID.fromString(id))
+            AssistanceEntity existingAssistance = assistanceRepository
+                    .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
                     .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
                             String.format(Messages.NOT_FOUND, id)));
 

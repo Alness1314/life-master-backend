@@ -3,6 +3,7 @@ package com.alness.lifemaster.debts.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,14 +82,14 @@ public class DebtsEntity {
 
     @PrePersist()
     public void init() {
-        setCreateAt(LocalDateTime.now());
-        setUpdateAt(LocalDateTime.now());
+        setCreateAt(LocalDateTime.now(ZoneId.systemDefault()));
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
         setErased(false);
     }
 
     @PreUpdate
     private void preUpdate() {
-        setUpdateAt(LocalDateTime.now());
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
     }
 
 }

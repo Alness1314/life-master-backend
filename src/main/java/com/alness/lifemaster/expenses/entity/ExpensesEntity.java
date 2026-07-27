@@ -3,6 +3,7 @@ package com.alness.lifemaster.expenses.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.alness.lifemaster.categories.entity.CategoryEntity;
@@ -65,13 +66,13 @@ public class ExpensesEntity {
 
     @PrePersist()
     public void init() {
-        setCreateAt(LocalDateTime.now());
-        setUpdateAt(LocalDateTime.now());
+        setCreateAt(LocalDateTime.now(ZoneId.systemDefault()));
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
         setErased(false);
     }
 
     @PreUpdate
     private void preUpdate(){
-        setUpdateAt(LocalDateTime.now());
+        setUpdateAt(LocalDateTime.now(ZoneId.systemDefault()));
     }
 }

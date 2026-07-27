@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,22 +21,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.alness.lifemaster.auth.filters.JwtAuthenticationFilter;
 import com.alness.lifemaster.auth.filters.JwtValidationFilter;
+import com.alness.lifemaster.auth.filters.UserOwnershipFilter;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 
 @Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SpringSecurityConfig {
-    @Autowired
-    private AuthenticationConfiguration authenticationConfiguration;
-
+    
+    private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtTokenConfig jwtTokenConfig;
-
-    public SpringSecurityConfig(JwtTokenConfig jwtTokenConfig) {
-        this.jwtTokenConfig = jwtTokenConfig; // Inyectar la configuración de JWT
-    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -49,13 +49,15 @@ public class SpringSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        JwtAuthenticationFilter authenticationFilter = new JwtAuthenticationFilter(
+                authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig);
         http.authorizeHttpRequests(
-                request -> request.requestMatchers(WHITE_LIST_URLS).permitAll()
+                request -> request.requestMatchers("/", jwtTokenConfig.getApiPrefix() + "/auth").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/api-docs/**").hasAuthority("Administrator")
                         .anyRequest().authenticated())
-                .addFilterBefore(new JwtAuthenticationFilter(authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig),
-                        UsernamePasswordAuthenticationFilter.class)
-                .addFilter(new JwtAuthenticationFilter(authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig))
+                .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilter(new JwtValidationFilter(authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig))
+                .addFilterAfter(new UserOwnershipFilter(), JwtValidationFilter.class)
                 .csrf(config -> config.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -63,12 +65,6 @@ public class SpringSecurityConfig {
 
         return http.build();
     }
-
-    private static final String[] WHITE_LIST_URLS = {
-            "/swagger-ui/**",
-            "/api-docs/**",
-            "/"
-    };
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {

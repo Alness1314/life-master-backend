@@ -1,6 +1,5 @@
 package com.alness.lifemaster.app.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,13 +9,14 @@ import com.alness.lifemaster.app.dto.ResponseServer;
 import com.alness.lifemaster.app.service.AppConfigService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Controller
 @Slf4j
+@RequiredArgsConstructor
 public class AppController {
-    @Autowired
-    private AppConfigService appConfigService;
+    private final AppConfigService appConfigService;
 
     @GetMapping("/")
     public RedirectView redirectToSwagger(HttpServletRequest request) {

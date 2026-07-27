@@ -3,7 +3,6 @@ package com.alness.lifemaster.income.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,13 +22,14 @@ import com.alness.lifemaster.income.service.IncomeService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
 @Tag(name = "Income", description = ".")
+@RequiredArgsConstructor
 public class IncomeController {
-    @Autowired
-    private IncomeService incomeService;
+    private final IncomeService incomeService;
 
     @GetMapping("/{userId}/income")
     public ResponseEntity<List<IncomeResponse>> findAll(@PathVariable String userId,
@@ -52,7 +52,7 @@ public class IncomeController {
 
     @PutMapping("/{userId}/income/{id}")
     public ResponseEntity<IncomeResponse> update(@PathVariable String userId, @PathVariable String id,
-            @RequestBody IncomeRequest request) {
+            @Valid @RequestBody IncomeRequest request) {
         IncomeResponse response = incomeService.update(userId, id, request);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }

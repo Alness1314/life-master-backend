@@ -16,6 +16,7 @@ import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.alness.lifemaster.common.dto.ResponseServerDto;
 import com.alness.lifemaster.common.keys.Filters;
@@ -39,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ExercisesServiceImpl implements ExercisesService {
     private final ExercisesRepository exercisesRepository;
     private final UserRepository userRepository;
@@ -108,7 +110,6 @@ public class ExercisesServiceImpl implements ExercisesService {
                     "Error en la sintaxis de acceso a datos: " + ex.getMessage());
         } catch (Exception e) {
             LoggerUtil.logError(e);
-            e.printStackTrace();
             throw new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
                     Messages.ERROR_ENTITY_SAVE);
         }

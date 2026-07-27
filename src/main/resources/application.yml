@@ -29,6 +29,7 @@ spring:
     jpa: 
         database-platform: org.hibernate.dialect.PostgreSQLDialect 
         show-sql: false
+        open-in-view: false
         hibernate: 
             ddl-auto: none # Opciones: create, create-drop, update, validate, none
 
@@ -54,8 +55,10 @@ spring:
 #Open api swagger ui 
 springdoc: 
     api-docs: 
+        enabled: ${SWAGGER_ENABLED:false}
         path: /api-docs
     swagger-ui:
+        enabled: ${SWAGGER_ENABLED:false}
         persist-authorization: true
         tags-sorter: alpha
         doc-expansion: list  # none | list | full
@@ -80,3 +83,7 @@ sys:
 
 email:
     from: ${EMAIL_USERNAME}
+
+app:
+    cors:
+        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
