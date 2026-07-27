@@ -25,6 +25,14 @@ Todos los recursos financieros se encuentran bajo
 - `/recurring-movements`: definiciones recurrentes.
 - `/recurring-movements/generate?through=YYYY-MM-DD`: materialización transaccional e idempotente.
 - `/financial-summary/monthly?year=YYYY&month=M&currency=MXN`: resumen mensual por moneda.
+- `/reports/monthly.csv`: exportación mensual.
+- `/bank-imports/csv`: vista previa y confirmación de movimientos bancarios.
+- `/alerts`: alertas presupuestales, de deuda y recurrencias.
+- `/reminders`: recordatorios programados.
+- `/expenses/{expenseId}/receipts`: comprobantes PDF o imagen.
 
 Gastos, ingresos y pagos de deuda aceptan relaciones opcionales con cuentas y
 medios de pago para mantener compatibilidad con los contratos anteriores.
+
+La guía de ejecución, observabilidad, importación y preparación para un futuro
+despliegue está en [docs/operations.md](docs/operations.md).

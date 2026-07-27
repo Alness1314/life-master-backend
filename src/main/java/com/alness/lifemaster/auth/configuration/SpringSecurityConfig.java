@@ -23,6 +23,8 @@ import com.alness.lifemaster.auth.filters.JwtAuthenticationFilter;
 import com.alness.lifemaster.auth.filters.JwtValidationFilter;
 import com.alness.lifemaster.auth.filters.UserOwnershipFilter;
 import com.alness.lifemaster.utils.ApiCodes;
+import com.alness.lifemaster.operations.audit.AuditEventService;
+import com.alness.lifemaster.operations.audit.AuditFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,6 +38,7 @@ public class SpringSecurityConfig {
     
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtTokenConfig jwtTokenConfig;
+    private final AuditEventService auditEventService;
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -53,11 +56,14 @@ public class SpringSecurityConfig {
                 authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig);
         http.authorizeHttpRequests(
                 request -> request.requestMatchers("/", jwtTokenConfig.getApiPrefix() + "/auth").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api-docs/**").hasAuthority("Administrator")
+                        .requestMatchers("/actuator/**").hasAuthority("Administrator")
                         .anyRequest().authenticated())
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilter(new JwtValidationFilter(authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig))
                 .addFilterAfter(new UserOwnershipFilter(), JwtValidationFilter.class)
+                .addFilterAfter(new AuditFilter(auditEventService), UserOwnershipFilter.class)
                 .csrf(config -> config.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

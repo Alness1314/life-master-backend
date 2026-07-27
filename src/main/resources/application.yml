@@ -87,3 +87,22 @@ email:
 app:
     cors:
         allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    reminders:
+        enabled: ${REMINDERS_ENABLED:false}
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,metrics
+    endpoint:
+        health:
+            show-details: when_authorized
+    info:
+        env:
+            enabled: true
+
+info:
+    app:
+        name: LifeMaster
+        version: ${APP_VERSION:0.0.1-SNAPSHOT}
