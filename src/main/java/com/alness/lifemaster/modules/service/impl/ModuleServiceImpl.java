@@ -25,6 +25,7 @@ import com.alness.lifemaster.modules.repository.ModuleRepository;
 import com.alness.lifemaster.modules.service.ModuleService;
 import com.alness.lifemaster.modules.specification.ModuleSpecification;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
+import com.alness.lifemaster.profiles.dto.response.ProfileResponse;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.utils.LoggerUtil;
@@ -172,7 +173,21 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     public ModuleResponse mapperModule(ModuleEntity module) {
-        return mapper.map(module, ModuleResponse.class);
+        ModuleResponse response = mapper.map(module, ModuleResponse.class);
+        response.setProfiles(module.getProfiles().stream()
+                .map(this::mapProfile)
+                .toList());
+        return response;
+    }
+
+    private ProfileResponse mapProfile(ProfileEntity profile) {
+        return ProfileResponse.builder()
+                .id(profile.getId())
+                .name(profile.getName())
+                .erased(profile.getErased())
+                .created(profile.getCreated())
+                .updated(profile.getUpdated())
+                .build();
     }
 
     private ModuleResponse convertToDto(ModuleEntity module) {
@@ -186,6 +201,7 @@ public class ModuleServiceImpl implements ModuleService {
                 .isParent(module.getIsParent())
                 .erased(module.getErased())
                 .children(module.getChildren().stream().map(this::convertToDto).toList())
+                .profiles(module.getProfiles().stream().map(this::mapProfile).toList())
                 .build();
     }
 

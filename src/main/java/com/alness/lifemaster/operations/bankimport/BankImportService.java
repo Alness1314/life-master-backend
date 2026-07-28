@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.util.*;
+import com.alness.lifemaster.common.currency.CurrencyCode;
 
 import org.apache.commons.csv.*;
 import org.springframework.http.HttpStatus;
@@ -108,7 +109,7 @@ public class BankImportService {
                         throw new IllegalArgumentException();
                     }
                     String currency = record.get("currency").toUpperCase(Locale.ROOT);
-                    if (!currency.matches("^[A-Z]{3}$")) {
+                    if (!CurrencyCode.supports(currency)) {
                         throw new IllegalArgumentException();
                     }
                     String description = record.get("description").trim();

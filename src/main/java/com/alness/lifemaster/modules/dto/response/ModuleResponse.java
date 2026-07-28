@@ -3,6 +3,7 @@ package com.alness.lifemaster.modules.dto.response;
 import java.util.List;
 import java.util.UUID;
 
+import com.alness.lifemaster.profiles.dto.response.ProfileResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,4 +25,5 @@ public class ModuleResponse {
     private String description;
     private Boolean isParent;
     private List<ModuleResponse> children;
+    private List<ProfileResponse> profiles;
 }

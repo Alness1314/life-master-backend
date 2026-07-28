@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.alness.lifemaster.common.currency.ValidCurrency;
 
 @Getter
 @Setter
@@ -49,6 +50,6 @@ public class ExpensesRequest {
 
     private UUID paymentMethodId;
 
-    @Pattern(regexp = "^[A-Z]{3}$")
+    @ValidCurrency
     private String currency;
 }

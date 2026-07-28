@@ -27,6 +27,11 @@ public class PaymentMethodService {
         return repository.findAllByUserIdAndErasedFalseOrderByName(userId).stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public PaymentMethodResponse findOne(UUID userId, UUID id) {
+        return toResponse(findOwned(userId, id));
+    }
+
     public PaymentMethodResponse save(UUID userId, PaymentMethodRequest request) {
         ensureUniqueName(userId, request.name(), null);
         PaymentMethodEntity entity = new PaymentMethodEntity();

@@ -72,7 +72,7 @@ public class DateTimeUtils {
 	public static LocalTime parseToLocalTime(String timeString) {
         try {
             // Convertir la cadena a LocalTime
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern(PATTERN_TIME_ISO);
+			DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_TIME;
             return LocalTime.parse(timeString, formatter);
         } catch (DateTimeParseException e) {
             // Manejo de error en caso de formato inválido

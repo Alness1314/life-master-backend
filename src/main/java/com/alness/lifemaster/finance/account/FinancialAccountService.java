@@ -32,6 +32,11 @@ public class FinancialAccountService {
         return repository.findAllByUserIdAndErasedFalseOrderByName(userId).stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public FinancialAccountResponse findOne(UUID userId, UUID id) {
+        return toResponse(findOwned(userId, id));
+    }
+
     public FinancialAccountResponse save(UUID userId, FinancialAccountRequest request) {
         ensureUniqueName(userId, request.name(), null);
         FinancialAccountEntity entity = new FinancialAccountEntity();

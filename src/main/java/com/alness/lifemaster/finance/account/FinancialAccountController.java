@@ -20,6 +20,11 @@ public class FinancialAccountController {
         return service.findAll(userId);
     }
 
+    @GetMapping("/{id}")
+    public FinancialAccountResponse findOne(@PathVariable UUID userId, @PathVariable UUID id) {
+        return service.findOne(userId, id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FinancialAccountResponse save(@PathVariable UUID userId, @Valid @RequestBody FinancialAccountRequest request) {

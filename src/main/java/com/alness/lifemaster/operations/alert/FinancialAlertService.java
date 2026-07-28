@@ -1,6 +1,7 @@
 package com.alness.lifemaster.operations.alert;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import org.springframework.http.*;
@@ -22,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class FinancialAlertService {
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     private final FinancialAlertRepository repository;
     private final UserRepository userRepository;
     private final BudgetService budgetService;
@@ -39,9 +42,9 @@ public class FinancialAlertService {
         for (BudgetResponse budget : budgetService.findPeriod(userId, now.getYear(), now.getMonthValue())) {
             if (budget.alert()) {
                 create(user, "BUDGET", budget.exceeded() ? "HIGH" : "MEDIUM",
-                        budget.exceeded() ? "Budget exceeded" : "Budget alert",
-                        "Budget usage is " + budget.usagePercentage() + "% for "
-                                + (budget.categoryName() == null ? "the month" : budget.categoryName()) + ".",
+                        budget.exceeded() ? "Presupuesto excedido" : "Alerta de presupuesto",
+                        "El presupuesto ha alcanzado un " + budget.usagePercentage() + "% de uso para "
+                                + (budget.categoryName() == null ? "el mes actual" : budget.categoryName()) + ".",
                         "budget:" + budget.id() + ":" + budget.spent());
             }
         }
@@ -49,14 +52,17 @@ public class FinancialAlertService {
                 .filter(debt -> DebtCalculator.outstandingAmount(debt).signum() > 0)
                 .filter(debt -> !debt.getDueDate().isAfter(now.plusDays(7)))
                 .forEach(debt -> create(user, "DEBT", debt.getDueDate().isBefore(now) ? "HIGH" : "MEDIUM",
-                        debt.getDueDate().isBefore(now) ? "Overdue debt" : "Debt due soon",
-                        debt.getCreditorName() + " has " + DebtCalculator.outstandingAmount(debt)
-                                + " " + debt.getCurrency() + " outstanding.",
+                        debt.getDueDate().isBefore(now) ? "Deuda vencida" : "Deuda próxima a vencer",
+                        "La deuda con " + debt.getCreditorName()
+                                + (debt.getDueDate().isBefore(now) ? " venció el " : " vence el ")
+                                + debt.getDueDate().format(DATE_FORMAT) + " y tiene un saldo pendiente de "
+                                + DebtCalculator.outstandingAmount(debt) + " " + debt.getCurrency() + ".",
                         "debt:" + debt.getId() + ":" + debt.getDueDate()));
         recurringRepository
                 .findAllByUserIdAndActiveTrueAndErasedFalseAndNextExecutionDateLessThanEqual(userId, now.plusDays(3))
-                .forEach(value -> create(user, "RECURRING", "LOW", "Recurring movement due",
-                        value.getDescription() + " is scheduled for " + value.getNextExecutionDate() + ".",
+                .forEach(value -> create(user, "RECURRING", "LOW", "Movimiento recurrente próximo",
+                        value.getDescription() + " está programado para el "
+                                + value.getNextExecutionDate().format(DATE_FORMAT) + ".",
                         "recurring:" + value.getId() + ":" + value.getNextExecutionDate()));
         return findAll(userId);
     }
@@ -68,10 +74,18 @@ public class FinancialAlertService {
     }
 
     private void create(UserEntity user, String type, String severity, String title, String message, String key) {
-        if (repository.existsByUserIdAndReferenceKey(user.getId(), key)) return;
-        FinancialAlertEntity value = new FinancialAlertEntity();
-        value.setUser(user); value.setAlertType(type); value.setSeverity(severity);
-        value.setTitle(title); value.setMessage(message); value.setReferenceKey(key); value.setRead(false);
+        FinancialAlertEntity value = repository.findByUserIdAndReferenceKey(user.getId(), key)
+                .orElseGet(() -> {
+                    FinancialAlertEntity alert = new FinancialAlertEntity();
+                    alert.setUser(user);
+                    alert.setReferenceKey(key);
+                    alert.setRead(false);
+                    return alert;
+                });
+        value.setAlertType(type);
+        value.setSeverity(severity);
+        value.setTitle(title);
+        value.setMessage(message);
         repository.save(value);
     }
 

@@ -2,16 +2,17 @@ package com.alness.lifemaster.app.service.impl;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.alness.lifemaster.app.dto.JwtDto;
 import com.alness.lifemaster.app.dto.ResponseServer;
 import com.alness.lifemaster.app.service.AppConfigService;
-import com.alness.lifemaster.app.service.DecodeJwtService;
 import com.alness.lifemaster.auth.dto.KeyPrefix;
 import com.alness.lifemaster.common.dto.ResponseDto;
 import com.alness.lifemaster.common.enums.AllowedProfiles;
@@ -32,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 public class AppConfigServiceImpl implements AppConfigService {
     private final ProfileService profileService;
     private final UserService userService;
-    private DecodeJwtService jwtService;
 
     @Value("${sys.user.password}")
     private String password;
@@ -106,19 +106,20 @@ public class AppConfigServiceImpl implements AppConfigService {
             return new ResponseServer("Sesión no válida o expirada.", null, false, HttpStatus.UNAUTHORIZED);
         }
 
-        String token = header.substring(KeyPrefix.PREFIX_TOKEN.length()).trim();
-
-        if (Boolean.FALSE.equals(jwtService.isValidToken(token))) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !(authentication.getDetails() instanceof UUID userId)
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
             return new ResponseServer("Sesión no válida o expirada.", null, false, HttpStatus.UNAUTHORIZED);
         }
 
-        JwtDto jwtDto = jwtService.decodeJwt(token);
-        UserResponse user = userService.findByUsername(jwtDto.getBody().getSub());
-
-        if (user == null) {
-            return new ResponseServer("El usuario no fue encontrado.", Map.of(), false, HttpStatus.NOT_FOUND);
-        }
-        Map<String, Object> data = Map.of("id", user.getId(), "username", user.getUsername(), "token", token);
+        String token = header.substring(KeyPrefix.PREFIX_TOKEN.length()).trim();
+        Map<String, Object> data = Map.of(
+                "id", userId,
+                "username", authentication.getName(),
+                "token", token);
 
         return new ResponseServer("Sesión válida.", data, true, HttpStatus.ACCEPTED);
     }

@@ -21,6 +21,11 @@ public class RecurringMovementController {
         return service.findAll(userId);
     }
 
+    @GetMapping("/{id}")
+    public RecurringMovementResponse findOne(@PathVariable UUID userId, @PathVariable UUID id) {
+        return service.findOne(userId, id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RecurringMovementResponse save(@PathVariable UUID userId,

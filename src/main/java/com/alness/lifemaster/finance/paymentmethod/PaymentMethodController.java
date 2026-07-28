@@ -20,6 +20,11 @@ public class PaymentMethodController {
         return service.findAll(userId);
     }
 
+    @GetMapping("/{id}")
+    public PaymentMethodResponse findOne(@PathVariable UUID userId, @PathVariable UUID id) {
+        return service.findOne(userId, id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentMethodResponse save(@PathVariable UUID userId, @Valid @RequestBody PaymentMethodRequest request) {

@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.alness.lifemaster.common.currency.ValidCurrency;
 
 @Getter
 @Setter
@@ -31,6 +32,6 @@ public class IncomeRequest {
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$")
     private String paymentDate;
     private UUID accountId;
-    @Pattern(regexp = "^[A-Z]{3}$")
+    @ValidCurrency
     private String currency;
 }

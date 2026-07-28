@@ -39,6 +39,15 @@ public class BudgetService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public BudgetResponse findOne(UUID userId, UUID id) {
+        BudgetEntity budget = findOwned(userId, id);
+        LocalDate from = LocalDate.of(budget.getYear(), budget.getMonth(), 1);
+        LocalDate to = from.withDayOfMonth(from.lengthOfMonth());
+        return toResponse(budget, expensesRepository
+                .findAllByUserIdAndPaymentDateBetweenAndErasedFalse(userId, from, to));
+    }
+
     public BudgetResponse save(UUID userId, BudgetRequest request) {
         ensureUnique(userId, request, null);
         BudgetEntity entity = new BudgetEntity();

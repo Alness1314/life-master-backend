@@ -21,6 +21,11 @@ public class BudgetController {
         return service.findPeriod(userId, year, month);
     }
 
+    @GetMapping("/{id}")
+    public BudgetResponse findOne(@PathVariable UUID userId, @PathVariable UUID id) {
+        return service.findOne(userId, id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BudgetResponse save(@PathVariable UUID userId, @Valid @RequestBody BudgetRequest request) {

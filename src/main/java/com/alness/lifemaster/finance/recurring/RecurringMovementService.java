@@ -40,6 +40,11 @@ public class RecurringMovementService {
                 .stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public RecurringMovementResponse findOne(UUID userId, UUID id) {
+        return toResponse(findOwned(userId, id));
+    }
+
     public RecurringMovementResponse save(UUID userId, RecurringMovementRequest request) {
         RecurringMovementEntity entity = new RecurringMovementEntity();
         entity.setUser(userRepository.findById(userId).orElseThrow(() -> notFound(userId)));
@@ -164,8 +169,11 @@ public class RecurringMovementService {
         return new RecurringMovementResponse(entity.getId(), entity.getMovementType(), entity.getDescription(),
                 entity.getAmount(), entity.getCurrency(),
                 entity.getCategory() == null ? null : entity.getCategory().getId(),
+                entity.getCategory() == null ? null : entity.getCategory().getName(),
                 entity.getAccount() == null ? null : entity.getAccount().getId(),
+                entity.getAccount() == null ? null : entity.getAccount().getName(),
                 entity.getPaymentMethod() == null ? null : entity.getPaymentMethod().getId(),
+                entity.getPaymentMethod() == null ? null : entity.getPaymentMethod().getName(),
                 entity.getFrequency(), entity.getStartDate(), entity.getEndDate(), entity.getNextExecutionDate(),
                 entity.getActive());
     }

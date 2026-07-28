@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.AssertTrue;
+import com.alness.lifemaster.common.currency.ValidCurrency;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,7 +31,7 @@ public class DebtsRequest {
     @DecimalMin("0.01")
     private BigDecimal totalAmount;
     @NotBlank
-    @Pattern(regexp = "^[A-Z]{3}$")
+    @ValidCurrency
     private String currency;
     @NotNull
     private Boolean hasInterest;
