@@ -15,11 +15,10 @@ import com.alness.lifemaster.debts.service.DebtCalculator;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.expenses.entity.ExpensesEntity;
 import com.alness.lifemaster.expenses.repository.ExpensesRepository;
-import com.alness.lifemaster.finance.budget.BudgetEntity;
-import com.alness.lifemaster.finance.budget.BudgetRepository;
 import com.alness.lifemaster.income.entity.IncomeEntity;
 import com.alness.lifemaster.income.repository.IncomeRepository;
 import com.alness.lifemaster.utils.ApiCodes;
+import com.alness.lifemaster.finance.account.FinancialAccountService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,8 +28,8 @@ import lombok.RequiredArgsConstructor;
 public class MonthlySummaryService {
     private final ExpensesRepository expensesRepository;
     private final IncomeRepository incomeRepository;
-    private final BudgetRepository budgetRepository;
     private final DebtsRespository debtsRepository;
+    private final FinancialAccountService financialAccountService;
 
     public MonthlySummaryResponse get(UUID userId, int year, int month, String currency) {
         if (year < 2000 || year > 2200 || month < 1 || month > 12) {
@@ -49,9 +48,6 @@ public class MonthlySummaryService {
         List<IncomeEntity> income = incomeRepository
                 .findAllByUserIdAndPaymentDateBetweenAndErasedFalse(userId, from, to).stream()
                 .filter(value -> currency.equals(value.getCurrency())).toList();
-        List<BudgetEntity> budgets = budgetRepository
-                .findAllByUserIdAndYearAndMonthAndErasedFalse(userId, year, month).stream()
-                .filter(value -> currency.equals(value.getCurrency())).toList();
         List<DebtsEntity> debts = debtsRepository.findAllByUserIdAndErasedFalse(userId);
         debts = debts.stream().filter(value -> currency.equals(value.getCurrency())).toList();
 
@@ -60,15 +56,42 @@ public class MonthlySummaryService {
         BigDecimal paidExpenses = expenses.stream().filter(e -> Boolean.TRUE.equals(e.getPaymentStatus()))
                 .map(ExpensesEntity::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal pendingExpenses = totalExpenses.subtract(paidExpenses);
-        Optional<BudgetEntity> generalBudget = budgets.stream().filter(b -> b.getCategory() == null).findFirst();
-        BigDecimal budgeted = generalBudget.map(BudgetEntity::getAmount).orElseGet(() ->
-                budgets.stream().map(BudgetEntity::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
-        BigDecimal budgetUsage = budgeted.signum() == 0 ? BigDecimal.ZERO
-                : totalExpenses.multiply(BigDecimal.valueOf(100))
-                        .divide(budgeted, 2, RoundingMode.HALF_UP);
         BigDecimal totalDebt = debts.stream().map(DebtsEntity::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal outstandingDebt = debts.stream().map(DebtCalculator::outstandingAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal debtProceeds = debts.stream()
+                .filter(value -> Boolean.TRUE.equals(value.getDisbursesFunds()))
+                .filter(value -> value.getReceivedDate() != null
+                        && !value.getReceivedDate().isBefore(from)
+                        && !value.getReceivedDate().isAfter(to))
+                .map(value -> value.getReceivedAmount() == null ? BigDecimal.ZERO : value.getReceivedAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        var periodPayments = debts.stream().flatMap(value -> value.getPayments().stream())
+                .filter(value -> !value.getPaymentDate().isBefore(from) && !value.getPaymentDate().isAfter(to))
+                .toList();
+        BigDecimal debtPayments = periodPayments.stream()
+                .filter(value -> Boolean.TRUE.equals(value.getIsPaid()))
+                .map(value -> value.getAmountPaid())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal debtPrincipalPaid = periodPayments.stream()
+                .filter(value -> Boolean.TRUE.equals(value.getIsPaid()))
+                .map(value -> value.getPrincipalAmount() == null ? value.getAmountPaid() : value.getPrincipalAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal debtInterestPaid = periodPayments.stream()
+                .filter(value -> Boolean.TRUE.equals(value.getIsPaid()))
+                .map(value -> value.getInterestAmount() == null ? BigDecimal.ZERO : value.getInterestAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal scheduledDebtPayments = periodPayments.stream()
+                .filter(value -> !Boolean.TRUE.equals(value.getIsPaid()))
+                .map(value -> value.getAmountPaid())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal operatingBalance = totalIncome.subtract(paidExpenses).subtract(debtInterestPaid);
+        BigDecimal cashFlowBalance = totalIncome.add(debtProceeds).subtract(paidExpenses).subtract(debtPayments);
+        BigDecimal freeMargin = cashFlowBalance.subtract(scheduledDebtPayments);
+        BigDecimal availableAccountBalance = financialAccountService.findAll(userId).stream()
+                .filter(account -> currency.equals(account.currency()))
+                .map(account -> account.currentBalance())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Map<UUID, List<ExpensesEntity>> grouped = expenses.stream()
@@ -80,7 +103,9 @@ public class MonthlySummaryService {
         }).sorted(Comparator.comparing(CategoryExpenseSummary::amount).reversed()).toList();
 
         return new MonthlySummaryResponse(year, month, currency, totalIncome, totalExpenses, paidExpenses, pendingExpenses,
-                totalIncome.subtract(totalExpenses), budgeted, budgetUsage, totalDebt, outstandingDebt, categories);
+                cashFlowBalance, operatingBalance, debtProceeds, debtPayments, debtPrincipalPaid, debtInterestPaid,
+                scheduledDebtPayments, freeMargin, availableAccountBalance,
+                totalDebt, outstandingDebt, categories);
     }
 
     private BigDecimal sumExpenses(List<ExpensesEntity> values) {

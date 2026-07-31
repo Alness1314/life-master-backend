@@ -19,8 +19,11 @@ public class PaymentResponse {
     private UUID id;
     private LocalDate paymentDate;
     private BigDecimal amountPaid;
+    private BigDecimal principalAmount;
+    private BigDecimal interestAmount;
     private String paymentMethod;
     private Boolean isPaid;
     private String notes;
     private UUID paymentMethodId;
+    private UUID accountId;
 }

@@ -2,6 +2,7 @@ package com.alness.lifemaster.debts.dto.request;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -51,6 +52,13 @@ public class DebtsRequest {
     @NotNull
     @Valid
     private List<PaymentRequest> payments;
+    @NotNull
+    private Boolean disbursesFunds;
+    @DecimalMin("0.01")
+    private BigDecimal receivedAmount;
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$")
+    private String receivedDate;
+    private UUID depositAccountId;
 
     @AssertTrue(message = "paymentsMade must not exceed numberOfPayments")
     public boolean isPaymentCountValid() {
@@ -64,9 +72,20 @@ public class DebtsRequest {
         }
         BigDecimal paid = payments.stream()
                 .filter(payment -> Boolean.TRUE.equals(payment.getIsPaid()))
-                .map(PaymentRequest::getAmountPaid)
+                .map(payment -> payment.getPrincipalAmount() == null
+                        ? payment.getAmountPaid()
+                        : payment.getPrincipalAmount())
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return paid.compareTo(totalAmount) <= 0;
+    }
+
+    @AssertTrue(message = "Los datos del desembolso son obligatorios cuando la deuda entrega dinero")
+    public boolean isDisbursementValid() {
+        if (!Boolean.TRUE.equals(disbursesFunds)) {
+            return receivedAmount == null && receivedDate == null && depositAccountId == null;
+        }
+        return receivedAmount != null && receivedAmount.signum() > 0
+                && receivedDate != null && depositAccountId != null;
     }
 }

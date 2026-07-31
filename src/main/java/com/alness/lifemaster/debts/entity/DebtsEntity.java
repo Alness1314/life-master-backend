@@ -11,6 +11,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import com.alness.lifemaster.users.entity.UserEntity;
+import com.alness.lifemaster.finance.account.FinancialAccountEntity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -62,6 +63,19 @@ public class DebtsEntity {
 
     @Column(name = "notes", nullable = true, columnDefinition = "text")
     private String notes;
+
+    @Column(name = "disburses_funds", nullable = false)
+    private Boolean disbursesFunds;
+
+    @Column(name = "received_amount", precision = 21, scale = 8)
+    private BigDecimal receivedAmount;
+
+    @Column(name = "received_date")
+    private LocalDate receivedDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deposit_account_id")
+    private FinancialAccountEntity depositAccount;
 
     @OneToMany(mappedBy = "debts", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(value = FetchMode.SUBSELECT)

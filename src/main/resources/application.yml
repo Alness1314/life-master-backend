@@ -16,8 +16,8 @@ spring:
 #image configuration size
     servlet: 
         multipart: 
-            max-file-size: 10MB
-            max-request-size: 10MB
+            max-file-size: 20MB
+            max-request-size: 20MB
 #datasource
     datasource:
         url: ${DB_URL_NAME}
@@ -87,8 +87,24 @@ email:
 app:
     cors:
         allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    files:
+        root: ${FILES_ROOT:./data/files}
+        max-size-bytes: ${FILES_MAX_SIZE_BYTES:10485760}
+    recurring-movements:
+        scheduler-enabled: ${RECURRING_SCHEDULER_ENABLED:true}
+        cron: ${RECURRING_SCHEDULER_CRON:0 5 0 * * *}
+        zone: ${RECURRING_SCHEDULER_ZONE:America/Mexico_City}
+    financial-alerts:
+        scheduler-enabled: ${FINANCIAL_ALERTS_SCHEDULER_ENABLED:true}
+        cron: ${FINANCIAL_ALERTS_SCHEDULER_CRON:0 20 0 * * *}
+        zone: ${FINANCIAL_ALERTS_SCHEDULER_ZONE:America/Mexico_City}
+    sessions:
+        cleanup-cron: ${SESSION_CLEANUP_CRON:0 40 0 * * *}
+        zone: ${SESSION_SCHEDULER_ZONE:America/Mexico_City}
     reminders:
         enabled: ${REMINDERS_ENABLED:false}
+    bank-import:
+        max-size-bytes: ${BANK_IMPORT_MAX_SIZE_BYTES:20971520}
 
 management:
     endpoints:

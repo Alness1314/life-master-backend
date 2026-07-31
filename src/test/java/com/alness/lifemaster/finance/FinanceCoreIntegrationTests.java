@@ -15,7 +15,6 @@ import com.alness.lifemaster.categories.repository.CategoryRepository;
 import com.alness.lifemaster.expenses.dto.request.ExpensesRequest;
 import com.alness.lifemaster.expenses.service.ExpensesService;
 import com.alness.lifemaster.finance.account.*;
-import com.alness.lifemaster.finance.budget.*;
 import com.alness.lifemaster.finance.summary.MonthlySummaryResponse;
 import com.alness.lifemaster.finance.summary.MonthlySummaryService;
 import com.alness.lifemaster.finance.recurring.*;
@@ -32,13 +31,13 @@ class FinanceCoreIntegrationTests {
     @Autowired private FinancialAccountService accountService;
     @Autowired private ExpensesService expensesService;
     @Autowired private IncomeService incomeService;
-    @Autowired private BudgetService budgetService;
     @Autowired private MonthlySummaryService summaryService;
     @Autowired private RecurringMovementService recurringService;
     @Autowired private ExpensesRepository expensesRepository;
+    @Autowired private com.alness.lifemaster.finance.paymentmethod.PaymentMethodService paymentMethodService;
 
     @Test
-    void calculatesAccountBudgetAndMonthlySummaryFromRealMovements() {
+    void calculatesAccountAndMonthlySummaryFromRealMovements() {
         UUID userId = userRepository.findAll().get(0).getId();
         CategoryEntity category = new CategoryEntity();
         category.setName("Food test");
@@ -68,19 +67,14 @@ class FinanceCoreIntegrationTests {
         income.setAccountId(account.id());
         incomeService.save(userId.toString(), income);
 
-        budgetService.save(userId, new BudgetRequest(category.getId(), 2026, 7, "MXN",
-                new BigDecimal("500.00"), 80));
-
         MonthlySummaryResponse summary = summaryService.get(userId, 2026, 7, "MXN");
         FinancialAccountResponse updatedAccount = accountService.findAll(userId).get(0);
-        BudgetResponse budget = budgetService.findPeriod(userId, 2026, 7).get(0);
 
         assertThat(summary.totalIncome()).isEqualByComparingTo("2000.00");
         assertThat(summary.totalExpenses()).isEqualByComparingTo("300.00");
         assertThat(summary.netBalance()).isEqualByComparingTo("1700.00");
+        assertThat(summary.freeMargin()).isEqualByComparingTo("1700.00");
         assertThat(updatedAccount.currentBalance()).isEqualByComparingTo("2700.00");
-        assertThat(budget.spent()).isEqualByComparingTo("300.00");
-        assertThat(budget.remaining()).isEqualByComparingTo("200.00");
     }
 
     @Test
@@ -106,5 +100,24 @@ class FinanceCoreIntegrationTests {
         assertThat(expensesRepository.findAllByUserIdAndPaymentDateBetweenAndErasedFalse(
                 userId, java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 1)))
                 .hasSize(1);
+    }
+
+    @Test
+    void paymentMethodIncludesItsCompleteFinancialAccount() {
+        UUID userId = userRepository.findAll().get(0).getId();
+        FinancialAccountResponse account = accountService.save(userId,
+                new FinancialAccountRequest("Payment account", AccountType.CHECKING, "MXN",
+                        new BigDecimal("1500.00"), true));
+
+        var paymentMethod = paymentMethodService.save(userId,
+                new com.alness.lifemaster.finance.paymentmethod.PaymentMethodRequest(
+                        "Debit account", com.alness.lifemaster.finance.paymentmethod.PaymentMethodType.DEBIT_CARD,
+                        account.id(), true));
+
+        assertThat(paymentMethod.accountId()).isEqualTo(account.id());
+        assertThat(paymentMethod.account()).isNotNull();
+        assertThat(paymentMethod.account().name()).isEqualTo("Payment account");
+        assertThat(paymentMethod.account().currency()).isEqualTo("MXN");
+        assertThat(paymentMethod.account().currentBalance()).isEqualByComparingTo("1500.00");
     }
 }

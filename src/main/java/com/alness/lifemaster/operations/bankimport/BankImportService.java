@@ -1,14 +1,12 @@
 package com.alness.lifemaster.operations.bankimport;
 
-import java.io.*;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.LocalDate;
 import java.util.*;
-import com.alness.lifemaster.common.currency.CurrencyCode;
 
-import org.apache.commons.csv.*;
+import java.io.IOException;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,17 +30,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class BankImportService {
-    private static final long MAX_IMPORT_SIZE = 5L * 1024 * 1024;
-
     private final BankImportRepository repository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final FinancialAccountRepository accountRepository;
     private final ExpensesRepository expensesRepository;
     private final IncomeRepository incomeRepository;
+    private final BankStatementFileParser fileParser;
+
+    @Value("${app.bank-import.max-size-bytes:20971520}")
+    private long maxImportSize;
 
     public BankImportResponse importCsv(UUID userId, UUID accountId, UUID expenseCategoryId,
             MultipartFile file, boolean dryRun) {
+        return importFile(userId, accountId, expenseCategoryId, "MXN", file, dryRun);
+    }
+
+    public BankImportResponse importFile(UUID userId, UUID accountId, UUID expenseCategoryId,
+            String defaultCurrency, MultipartFile file, boolean dryRun) {
         byte[] content = read(file);
         String hash = sha256(content);
         if (!dryRun && repository.existsByUserIdAndFileHash(userId, hash)) {
@@ -53,8 +58,25 @@ public class BankImportService {
         FinancialAccountEntity account = accountId == null ? null
                 : accountRepository.findByIdAndUserIdAndErasedFalse(accountId, userId)
                         .orElseThrow(() -> error(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "Account not found."));
-        List<Row> rows = parse(content);
-        boolean hasExpenses = rows.stream().anyMatch(row -> row.type == Type.EXPENSE);
+        ParsedBankStatement statement;
+        try {
+            statement = fileParser.parse(content, file.getOriginalFilename(), defaultCurrency);
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, exception.getMessage());
+        }
+        List<BankImportFailurePreview> failures = new ArrayList<>(statement.failures());
+        List<BankMovement> rows = new ArrayList<>();
+        for (BankMovement row : statement.movements()) {
+            if (account != null && !account.getCurrency().equals(row.currency())) {
+                failures.add(new BankImportFailurePreview(
+                        row.rowNumber(),
+                        row.description(),
+                        "La moneda no coincide con la moneda de la cuenta seleccionada."));
+            } else {
+                rows.add(row);
+            }
+        }
+        boolean hasExpenses = rows.stream().anyMatch(row -> row.type() == MovementType.EXPENSE);
         CategoryEntity category = expenseCategoryId == null ? null
                 : categoryRepository.findById(expenseCategoryId)
                         .orElseThrow(() -> error(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND, "Category not found."));
@@ -62,16 +84,11 @@ public class BankImportService {
             throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
                     "expenseCategoryId is required when the file contains expenses.");
         }
-        if (account != null && rows.stream().anyMatch(row -> !account.getCurrency().equals(row.currency))) {
-            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
-                    "Every imported row must use the account currency.");
-        }
-
-        int expenseCount = (int) rows.stream().filter(row -> row.type == Type.EXPENSE).count();
+        int expenseCount = (int) rows.stream().filter(row -> row.type() == MovementType.EXPENSE).count();
         int incomeCount = rows.size() - expenseCount;
-        if (!dryRun) {
-            for (Row row : rows) {
-                if (row.type == Type.EXPENSE) {
+        if (!dryRun && !rows.isEmpty()) {
+            for (BankMovement row : rows) {
+                if (row.type() == MovementType.EXPENSE) {
                     saveExpense(user, account, category, row);
                 } else {
                     saveIncome(user, account, row);
@@ -79,7 +96,7 @@ public class BankImportService {
             }
             BankImportEntity imported = new BankImportEntity();
             imported.setUser(user);
-            String fileName = file.getOriginalFilename() == null ? "bank.csv"
+            String fileName = file.getOriginalFilename() == null ? "bank-import"
                     : file.getOriginalFilename().replace("\\", "/");
             fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
             imported.setFileName(fileName.length() > 256 ? fileName.substring(fileName.length() - 256) : fileName);
@@ -89,83 +106,62 @@ public class BankImportService {
             imported.setImportedIncome(incomeCount);
             repository.save(imported);
         }
-        return new BankImportResponse(dryRun, rows.size(), expenseCount, incomeCount, List.of());
-    }
-
-    private List<Row> parse(byte[] content) {
-        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(content), StandardCharsets.UTF_8);
-                CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true)
-                        .setIgnoreSurroundingSpaces(true).build().parse(reader)) {
-            Set<String> required = Set.of("date", "description", "amount", "type", "currency");
-            if (!parser.getHeaderMap().keySet().containsAll(required)) {
-                throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
-                        "CSV headers required: date,description,amount,type,currency.");
-            }
-            List<Row> rows = new ArrayList<>();
-            for (CSVRecord record : parser) {
-                try {
-                    BigDecimal amount = new BigDecimal(record.get("amount"));
-                    if (amount.signum() <= 0) {
-                        throw new IllegalArgumentException();
-                    }
-                    String currency = record.get("currency").toUpperCase(Locale.ROOT);
-                    if (!CurrencyCode.supports(currency)) {
-                        throw new IllegalArgumentException();
-                    }
-                    String description = record.get("description").trim();
-                    if (description.isEmpty() || description.length() > 256) {
-                        throw new IllegalArgumentException();
-                    }
-                    rows.add(new Row(LocalDate.parse(record.get("date")), description,
-                            amount, Type.valueOf(record.get("type").toUpperCase(Locale.ROOT)), currency));
-                } catch (RuntimeException exception) {
-                    throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
-                            "Invalid data on CSV row " + record.getRecordNumber() + ".");
-                }
-            }
-            if (rows.isEmpty()) {
-                throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, "The CSV file has no movements.");
-            }
-            return rows;
-        } catch (IOException exception) {
-            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, "Could not read CSV file.");
+        List<BankImportMovementPreview> preview = rows.stream()
+                .limit(200)
+                .map(BankImportMovementPreview::from)
+                .toList();
+        List<BankImportFailurePreview> failurePreview = failures.stream()
+                .limit(200)
+                .toList();
+        List<String> warnings = new ArrayList<>(statement.warnings());
+        if (rows.size() > preview.size()) {
+            warnings.add("La tabla muestra los primeros 200 movimientos exitosos.");
         }
+        if (failures.size() > failurePreview.size()) {
+            warnings.add("La tabla muestra los primeros 200 registros fallidos.");
+        }
+        int totalRows = statement.movements().size() + statement.failures().size();
+        return new BankImportResponse(dryRun, statement.format(), totalRows,
+                rows.size(), failures.size(), expenseCount, incomeCount,
+                List.copyOf(warnings), preview, failurePreview);
     }
 
-    private void saveExpense(UserEntity user, FinancialAccountEntity account, CategoryEntity category, Row row) {
+    private void saveExpense(UserEntity user, FinancialAccountEntity account, CategoryEntity category,
+            BankMovement row) {
         ExpensesEntity value = new ExpensesEntity();
         value.setUser(user);
         value.setAccount(account);
         value.setCategory(category);
         value.setBankOrEntity(account == null ? "Bank import" : account.getName());
-        value.setDescription(row.description);
-        value.setAmount(row.amount);
-        value.setCurrency(row.currency);
-        value.setPaymentDate(row.date);
+        value.setDescription(row.description());
+        value.setAmount(row.amount());
+        value.setCurrency(row.currency());
+        value.setPaymentDate(row.date());
         value.setPaymentStatus(true);
         expensesRepository.save(value);
     }
 
-    private void saveIncome(UserEntity user, FinancialAccountEntity account, Row row) {
+    private void saveIncome(UserEntity user, FinancialAccountEntity account, BankMovement row) {
         IncomeEntity value = new IncomeEntity();
         value.setUser(user);
         value.setAccount(account);
         value.setSource(account == null ? "Bank import" : account.getName());
-        value.setDescription(row.description);
-        value.setAmount(row.amount);
-        value.setCurrency(row.currency);
-        value.setPaymentDate(row.date);
+        value.setDescription(row.description());
+        value.setAmount(row.amount());
+        value.setCurrency(row.currency());
+        value.setPaymentDate(row.date());
         incomeRepository.save(value);
     }
 
     private byte[] read(MultipartFile file) {
-        if (file.isEmpty() || file.getSize() > MAX_IMPORT_SIZE) {
-            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, "CSV must not be empty or exceed 5 MB.");
+        if (file.isEmpty() || file.getSize() > maxImportSize) {
+            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                    "El archivo no debe estar vacío ni exceder 20 MB.");
         }
         try {
             return file.getBytes();
         } catch (IOException exception) {
-            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, "Could not read CSV file.");
+            throw error(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST, "No fue posible leer el archivo.");
         }
     }
 
@@ -180,7 +176,4 @@ public class BankImportService {
     private RestExceptionHandler error(String code, HttpStatus status, String message) {
         return new RestExceptionHandler(code, status, message);
     }
-
-    private enum Type { EXPENSE, INCOME }
-    private record Row(LocalDate date, String description, BigDecimal amount, Type type, String currency) {}
 }

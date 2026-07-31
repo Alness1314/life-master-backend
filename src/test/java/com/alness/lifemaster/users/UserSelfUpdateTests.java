@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.mapper.GenericMapper;
+import com.alness.lifemaster.files.StoredFileRepository;
 import com.alness.lifemaster.common.validation.GenericExistenceValidator;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
@@ -39,6 +40,8 @@ class UserSelfUpdateTests {
     private PasswordEncoder passwordEncoder;
     @Mock
     private GenericMapper mapper;
+    @Mock
+    private StoredFileRepository storedFileRepository;
 
     private UserServiceImpl service;
     private UUID userId;
@@ -51,7 +54,8 @@ class UserSelfUpdateTests {
                 profileRepository,
                 passwordEncoder,
                 mapper,
-                new GenericExistenceValidator());
+                new GenericExistenceValidator(),
+                storedFileRepository);
         userId = UUID.randomUUID();
         user = new UserEntity();
         user.setId(userId);
@@ -73,6 +77,7 @@ class UserSelfUpdateTests {
         request.setPassword("new-password-123");
         request.setImageId(imageId.toString());
         when(passwordEncoder.encode("new-password-123")).thenReturn("encoded-new-password");
+        when(storedFileRepository.existsByIdAndUserIdAndErasedFalse(imageId, userId)).thenReturn(true);
         when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(mapper.map(any(UserEntity.class), any())).thenReturn(new UserResponse());
 

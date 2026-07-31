@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.alness.lifemaster.debts.repository.DebtsRespository;
 import com.alness.lifemaster.debts.service.DebtCalculator;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
-import com.alness.lifemaster.finance.budget.*;
 import com.alness.lifemaster.finance.recurring.RecurringMovementRepository;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
@@ -27,27 +26,20 @@ public class FinancialAlertService {
 
     private final FinancialAlertRepository repository;
     private final UserRepository userRepository;
-    private final BudgetService budgetService;
     private final DebtsRespository debtsRepository;
     private final RecurringMovementRepository recurringRepository;
 
     @Transactional(readOnly = true)
     public List<FinancialAlertResponse> findAll(UUID userId) {
-        return repository.findAllByUserIdOrderByCreatedAtDesc(userId).stream().map(this::response).toList();
+        return repository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+                .filter(value -> !"BUDGET".equalsIgnoreCase(value.getAlertType()))
+                .map(this::response)
+                .toList();
     }
 
     public List<FinancialAlertResponse> refresh(UUID userId) {
         UserEntity user = userRepository.findById(userId).orElseThrow(() -> notFound(userId));
         LocalDate now = LocalDate.now();
-        for (BudgetResponse budget : budgetService.findPeriod(userId, now.getYear(), now.getMonthValue())) {
-            if (budget.alert()) {
-                create(user, "BUDGET", budget.exceeded() ? "HIGH" : "MEDIUM",
-                        budget.exceeded() ? "Presupuesto excedido" : "Alerta de presupuesto",
-                        "El presupuesto ha alcanzado un " + budget.usagePercentage() + "% de uso para "
-                                + (budget.categoryName() == null ? "el mes actual" : budget.categoryName()) + ".",
-                        "budget:" + budget.id() + ":" + budget.spent());
-            }
-        }
         debtsRepository.findAllByUserIdAndErasedFalse(userId).stream()
                 .filter(debt -> DebtCalculator.outstandingAmount(debt).signum() > 0)
                 .filter(debt -> !debt.getDueDate().isAfter(now.plusDays(7)))

@@ -27,7 +27,7 @@ public class DebtsSpec implements Specification<DebtsEntity> {
 
     public Specification<DebtsEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<DebtsEntity> specification = null;
+        Specification<DebtsEntity> specification = active();
         for (Map.Entry<String, String> entry : params.entrySet()) {
             Specification<DebtsEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
@@ -53,6 +53,10 @@ public class DebtsSpec implements Specification<DebtsEntity> {
 
     private Specification<DebtsEntity> filterById(String id) {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
+    }
+
+    private Specification<DebtsEntity> active() {
+        return (root, query, cb) -> cb.isFalse(root.get("erased"));
     }
 
 }

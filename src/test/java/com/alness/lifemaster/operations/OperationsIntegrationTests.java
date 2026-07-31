@@ -25,6 +25,7 @@ import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.operations.audit.*;
 import com.alness.lifemaster.operations.reminder.*;
 import com.alness.lifemaster.operations.alert.FinancialAlertService;
+import com.alness.lifemaster.files.*;
 
 @SpringBootTest
 @Transactional
@@ -38,6 +39,7 @@ class OperationsIntegrationTests {
     @Autowired private AuditEventService auditEventService;
     @Autowired private FinancialReminderService reminderService;
     @Autowired private FinancialAlertService alertService;
+    @Autowired private StoredFileService storedFileService;
 
     @Test
     void storesAndDownloadsPrivateExpenseReceipt() throws Exception {
@@ -73,6 +75,31 @@ class OperationsIntegrationTests {
     }
 
     @Test
+    void importsValidRowsAndReportsRejectedRows() {
+        UUID userId = userRepository.findAll().get(0).getId();
+        CategoryEntity category = category("Partial bank import");
+        byte[] csv = ("date,description,amount,type,currency\n"
+                + "2026-07-03,Valid income,500.00,INCOME,MXN\n"
+                + "invalid-date,Rejected expense,100.00,EXPENSE,MXN\n").getBytes(StandardCharsets.UTF_8);
+        MockMultipartFile file = new MockMultipartFile("file", "partial-bank.csv", "text/csv", csv);
+
+        BankImportResponse confirmed = bankImportService.importCsv(
+                userId, null, category.getId(), file, false);
+
+        assertThat(confirmed.totalRows()).isEqualTo(2);
+        assertThat(confirmed.successfulRows()).isEqualTo(1);
+        assertThat(confirmed.failedRows()).isEqualTo(1);
+        assertThat(confirmed.movements()).singleElement()
+                .satisfies(movement -> assertThat(movement.description()).isEqualTo("Valid income"));
+        assertThat(confirmed.failures()).singleElement()
+                .satisfies(failure -> {
+                    assertThat(failure.rowNumber()).isEqualTo(3);
+                    assertThat(failure.description()).isEqualTo("Rejected expense");
+                    assertThat(failure.reason()).isEqualTo("Fecha inválida.");
+                });
+    }
+
+    @Test
     void exportsMonthlyCsvWithUtf8BomAndMovements() {
         UUID userId = userRepository.findAll().get(0).getId();
         CategoryEntity category = category("Reports");
@@ -97,6 +124,37 @@ class OperationsIntegrationTests {
         assertThat(auditEventService.find(userId, 10)).isNotEmpty();
         assertThat(reminder.delivered()).isFalse();
         assertThat(alertService.refresh(userId)).isNotNull();
+    }
+
+    @Test
+    void storesPrivateGenericFileAndValidatesProfileImageType() {
+        UUID userId = userRepository.findAll().get(0).getId();
+        MockMultipartFile image = new MockMultipartFile("file", "avatar.png", "image/png",
+                new byte[] { (byte) 0x89, 0x50, 0x4E, 0x47 });
+
+        StoredFileResponse saved = storedFileService.save(userId, FilePurpose.PROFILE_IMAGE, image);
+
+        assertThat(saved.originalName()).isEqualTo("avatar.png");
+        assertThat(saved.sha256()).hasSize(64);
+        assertThat(storedFileService.content(userId, saved.id())).exists();
+        assertThatThrownBy(() -> storedFileService.findOwned(UUID.randomUUID(), saved.id()))
+                .isInstanceOf(RestExceptionHandler.class);
+    }
+
+    @Test
+    void searchesSemanticAuditFields() {
+        UUID userId = userRepository.findAll().get(0).getId();
+        auditEventService.record(userId, "audit@example.com", "DELETE", "/api/v1/users/" + userId
+                        + "/files/4f94fd16-22f8-4b16-b0ed-d46c61b77d22",
+                "ELIMINAR", "FILES", "4f94fd16-22f8-4b16-b0ed-d46c61b77d22",
+                "Eliminación de archivo", 204, "audit-test-1234", "127.0.0.1", "JUnit", 5);
+
+        AuditEventPageResponse result = auditEventService.search(userId, null, "files", "eliminar",
+                null, true, null, null, 0, 10);
+
+        assertThat(result.totalElements()).isPositive();
+        assertThat(result.content().get(0).module()).isEqualTo("FILES");
+        assertThat(result.content().get(0).successful()).isTrue();
     }
 
     private CategoryEntity category(String name) {

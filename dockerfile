@@ -6,8 +6,9 @@ RUN chmod +x mvnw && ./mvnw -B -DskipTests dependency:go-offline
 COPY src src
 RUN ./mvnw -B -DskipTests package
 
-FROM eclipse-temurin:17-jre-alpine
-RUN addgroup -S lifemaster && adduser -S lifemaster -G lifemaster
+FROM eclipse-temurin:17-jre-jammy
+RUN groupadd --system lifemaster \
+    && useradd --system --gid lifemaster --no-create-home lifemaster
 WORKDIR /app
 COPY --from=build /workspace/target/life-master-0.0.1-SNAPSHOT.jar app.jar
 USER lifemaster

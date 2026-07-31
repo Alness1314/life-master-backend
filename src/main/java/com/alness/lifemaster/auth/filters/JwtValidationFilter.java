@@ -1,7 +1,6 @@
 package com.alness.lifemaster.auth.filters;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,8 +15,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import com.alness.lifemaster.auth.configuration.JwtTokenConfig;
-import com.alness.lifemaster.auth.configuration.SimpleGrantedAuthorityJsonCreator;
 import com.alness.lifemaster.auth.dto.KeyPrefix;
+import com.alness.lifemaster.auth.session.JwtSessionAttributes;
+import com.alness.lifemaster.auth.session.RevokedTokenService;
+import com.alness.lifemaster.users.entity.UserEntity;
+import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,12 +35,16 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class JwtValidationFilter extends BasicAuthenticationFilter{
-     private static final String AUTHORITIES_KEY = "authorities";
      private final JwtTokenConfig jwtTokenConfig;
+     private final UserRepository userRepository;
+     private final RevokedTokenService revokedTokenService;
 
-    public JwtValidationFilter(AuthenticationManager authenticationManager, JwtTokenConfig jwtTokenConfig) {
+    public JwtValidationFilter(AuthenticationManager authenticationManager, JwtTokenConfig jwtTokenConfig,
+            UserRepository userRepository, RevokedTokenService revokedTokenService) {
         super(authenticationManager);
         this.jwtTokenConfig = jwtTokenConfig;
+        this.userRepository = userRepository;
+        this.revokedTokenService = revokedTokenService;
     }
 
     @Override
@@ -59,24 +65,45 @@ public class JwtValidationFilter extends BasicAuthenticationFilter{
                     .parseClaimsJws(token)
                     .getBody();
 
-            Object authoritiesClaims = claims.get(AUTHORITIES_KEY);
+            String tokenId = claims.getId();
+            if (tokenId == null || tokenId.isBlank() || revokedTokenService.isRevoked(tokenId)) {
+                throw new JwtException("La sesión fue revocada o pertenece a una versión anterior.");
+            }
 
-            Collection<SimpleGrantedAuthority> authorities = Arrays.asList(new ObjectMapper()
-                    .addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthorityJsonCreator.class)
-                    .readValue(authoritiesClaims.toString().getBytes(), SimpleGrantedAuthority[].class));
+            UUID userId = UUID.fromString(claims.get("id", String.class));
+            UserEntity user = userRepository.findById(userId)
+                    .filter(value -> !Boolean.TRUE.equals(value.getErased()))
+                    .orElseThrow(() -> new JwtException("El usuario de la sesión ya no está activo."));
+            if (!user.getUsername().equalsIgnoreCase(claims.getSubject())) {
+                throw new JwtException("La identidad de la sesión ya no coincide con el usuario.");
+            }
+
+            Collection<SimpleGrantedAuthority> authorities = user.getProfiles().stream()
+                    .filter(profile -> !Boolean.TRUE.equals(profile.getErased()))
+                    .map(profile -> new SimpleGrantedAuthority(profile.getName()))
+                    .toList();
+            if (authorities.isEmpty()) {
+                throw new JwtException("El usuario ya no tiene perfiles activos.");
+            }
 
             UsernamePasswordAuthenticationToken autentication = new UsernamePasswordAuthenticationToken(
-                    claims.getSubject(), null, authorities);
-            autentication.setDetails(UUID.fromString(claims.get("id", String.class)));
+                    user.getUsername(), null, authorities);
+            autentication.setDetails(userId);
 
             SecurityContextHolder.getContext().setAuthentication(autentication);
-            chain.doFilter(request, response);
+            request.setAttribute(JwtSessionAttributes.TOKEN_ID, tokenId);
+            request.setAttribute(JwtSessionAttributes.EXPIRES_AT, claims.getExpiration().toInstant());
         } catch (ExpiredJwtException e) {
-            handleError(response, "Token expired", e, HttpServletResponse.SC_UNAUTHORIZED);
-        } catch (JwtException e) {
-            handleError(response, "Invalid JWT token", e, HttpServletResponse.SC_FORBIDDEN);
-        } catch (IOException e) {
-            handleError(response, "IO Error while processing JWT", e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            handleError(response, "La sesión expiró.", e, HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        } catch (JwtException | IllegalArgumentException e) {
+            handleError(response, "La sesión no es válida o fue revocada.", e,
+                    HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        try {
+            chain.doFilter(request, response);
         } finally {
             SecurityContextHolder.clearContext();
         }
@@ -84,7 +111,7 @@ public class JwtValidationFilter extends BasicAuthenticationFilter{
     }
 
     private void handleError(HttpServletResponse response, String message, Exception e, int status) throws IOException {
-        log.error(message, e);
+        log.warn("{}: {}", message, e.getMessage());
         Map<String, String> bodyResponse = new HashMap<>();
         bodyResponse.put("code", ApiCodes.API_CODE + status);
             bodyResponse.put("error", "Unauthorized");

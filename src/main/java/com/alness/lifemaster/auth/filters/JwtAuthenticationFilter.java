@@ -85,6 +85,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         claims.put("id", userId);
         String token = Jwts.builder()
                 .setClaims(claims)
+                .setId(UUID.randomUUID().toString())
                 .setSubject(username)
                 .signWith(jwtTokenConfig.getSecretKey())
                 .setIssuedAt(new Date())

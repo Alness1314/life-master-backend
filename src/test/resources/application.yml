@@ -37,6 +37,11 @@ sys:
 email:
   from: test@example.com
 
+app:
+  files:
+    root: ./target/test-files
+    max-size-bytes: 1048576
+
 springdoc:
   api-docs:
     enabled: false

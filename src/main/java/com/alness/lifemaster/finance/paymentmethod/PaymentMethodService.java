@@ -76,7 +76,9 @@ public class PaymentMethodService {
 
     private PaymentMethodResponse toResponse(PaymentMethodEntity entity) {
         return new PaymentMethodResponse(entity.getId(), entity.getName(), entity.getMethodType(),
-                entity.getAccount() == null ? null : entity.getAccount().getId(), entity.getActive());
+                entity.getAccount() == null ? null : entity.getAccount().getId(),
+                entity.getAccount() == null ? null : accountService.toResponse(entity.getAccount()),
+                entity.getActive());
     }
 
     private RestExceptionHandler notFound(Object id) {

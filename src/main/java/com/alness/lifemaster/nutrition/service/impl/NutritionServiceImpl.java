@@ -115,19 +115,13 @@ public class NutritionServiceImpl implements NutritionService {
 
     @Override
     public NutritionResponse findOne(String userId, String id) {
-        NutritionEntity nutrition = nutritionRepository
-                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
-                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        String.format(Messages.NOT_FOUND, id)));
+        NutritionEntity nutrition = findActiveOwned(userId, id);
         return mapperDto(nutrition);
     }
 
     @Override
     public NutritionResponse update(String userId, String id, NutritionRequest request) {
-        NutritionEntity existing = nutritionRepository
-                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
-                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        String.format(Messages.NOT_FOUND, id)));
+        NutritionEntity existing = findActiveOwned(userId, id);
         try {
             // Actualiza campos simples
             existing.setMealType(request.getMealType());
@@ -160,13 +154,17 @@ public class NutritionServiceImpl implements NutritionService {
 
     @Override
     public ResponseServerDto delete(String userId, String id) {
-        NutritionEntity nutrition = nutritionRepository
-                .findOne(filterWithParameters(Map.of(Filters.KEY_USER, userId, Filters.KEY_ID, id)))
-                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
-                        String.format(Messages.NOT_FOUND, id)));
+        NutritionEntity nutrition = findActiveOwned(userId, id);
         nutrition.setErased(true);
         nutritionRepository.save(nutrition);
         return new ResponseServerDto(String.format(Messages.ENTITY_DELETE, id), HttpStatus.ACCEPTED, true);
+    }
+
+    private NutritionEntity findActiveOwned(String userId, String id) {
+        return nutritionRepository
+                .findByIdAndUserIdAndErasedFalse(UUID.fromString(id), UUID.fromString(userId))
+                .orElseThrow(() -> new RestExceptionHandler(ApiCodes.API_CODE_404, HttpStatus.NOT_FOUND,
+                        String.format(Messages.NOT_FOUND, id)));
     }
 
     private NutritionResponse mapperDto(NutritionEntity source) {

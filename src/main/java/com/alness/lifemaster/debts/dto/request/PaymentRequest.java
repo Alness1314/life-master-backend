@@ -26,6 +26,10 @@ public class PaymentRequest {
     @NotNull
     @DecimalMin("0.01")
     private BigDecimal amountPaid;
+    @DecimalMin("0.01")
+    private BigDecimal principalAmount;
+    @DecimalMin("0.00")
+    private BigDecimal interestAmount;
     @NotBlank
     @Size(max = 128)
     private String paymentMethod;
@@ -34,4 +38,5 @@ public class PaymentRequest {
     @Size(max = 2000)
     private String notes;
     private UUID paymentMethodId;
+    private UUID accountId;
 }

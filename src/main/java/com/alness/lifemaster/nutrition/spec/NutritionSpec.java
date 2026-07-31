@@ -29,7 +29,7 @@ public class NutritionSpec implements Specification<NutritionEntity> {
 
     public Specification<NutritionEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<NutritionEntity> specification = null;
+        Specification<NutritionEntity> specification = active();
         for (Map.Entry<String, String> entry : params.entrySet()) {
             Specification<NutritionEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
@@ -65,6 +65,10 @@ public class NutritionSpec implements Specification<NutritionEntity> {
         return (root, query, cb) -> cb.equal(root.<LocalDateTime>get("dateTimeConsumption"),
                 DateTimeUtils.parseToLocalDateTime(date));
 
+    }
+
+    private Specification<NutritionEntity> active() {
+        return (root, query, cb) -> cb.isFalse(root.get("erased"));
     }
 
 }

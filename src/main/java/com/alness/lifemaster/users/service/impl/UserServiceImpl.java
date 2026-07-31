@@ -24,6 +24,7 @@ import com.alness.lifemaster.common.validation.GenericExistenceValidator;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
+import com.alness.lifemaster.files.StoredFileRepository;
 import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
@@ -50,6 +51,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final GenericMapper mapper;
     private final GenericExistenceValidator existenceValidator;
+    private final StoredFileRepository storedFileRepository;
 
     @Override
     public UserResponse save(UserRequest request) {
@@ -73,9 +75,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             newUser.setProfiles(profiles);
             newUser.setPassword(passwordEncoder.encode(request.getPassword()));
             if (request.getImageId() != null && !request.getImageId().isEmpty()) {
-                // logica para buscar la imagen
+                newUser.setImageId(UUID.fromString(request.getImageId()));
             } else {
-                newUser.setId(null);
+                newUser.setImageId(null);
             }
             newUser = userRepository.saveAndFlush(newUser);
             return mapperDto(newUser);
@@ -146,7 +148,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
             // Lógica para manejar la imagen (si es necesario)
             if (request.getImageId() != null && !request.getImageId().isEmpty()) {
-                // Lógica para buscar y actualizar la imagen
+                UUID imageId = UUID.fromString(request.getImageId());
+                if (!storedFileRepository.existsByIdAndUserIdAndErasedFalse(imageId, userId)) {
+                    throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                            "La imagen indicada no pertenece al usuario.");
+                }
+                existingUser.setImageId(imageId);
             }
 
             // Guardar los cambios en la base de datos
@@ -192,7 +199,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             hasChanges = true;
         }
         if (request.getImageId() != null) {
-            existingUser.setImageId(UUID.fromString(request.getImageId()));
+            UUID imageId = UUID.fromString(request.getImageId());
+            if (!storedFileRepository.existsByIdAndUserIdAndErasedFalse(imageId, userId)) {
+                throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                        "La imagen indicada no pertenece al usuario.");
+            }
+            existingUser.setImageId(imageId);
             hasChanges = true;
         }
         if (!hasChanges) {

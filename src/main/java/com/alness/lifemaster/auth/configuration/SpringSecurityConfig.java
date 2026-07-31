@@ -3,7 +3,6 @@ package com.alness.lifemaster.auth.configuration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -22,6 +21,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.alness.lifemaster.auth.filters.JwtAuthenticationFilter;
 import com.alness.lifemaster.auth.filters.JwtValidationFilter;
 import com.alness.lifemaster.auth.filters.UserOwnershipFilter;
+import com.alness.lifemaster.auth.session.RevokedTokenService;
+import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.operations.audit.AuditEventService;
 import com.alness.lifemaster.operations.audit.AuditFilter;
@@ -39,6 +40,8 @@ public class SpringSecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtTokenConfig jwtTokenConfig;
     private final AuditEventService auditEventService;
+    private final UserRepository userRepository;
+    private final RevokedTokenService revokedTokenService;
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -61,7 +64,8 @@ public class SpringSecurityConfig {
                         .requestMatchers("/actuator/**").hasAuthority("Administrator")
                         .anyRequest().authenticated())
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilter(new JwtValidationFilter(authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig))
+                .addFilter(new JwtValidationFilter(authenticationConfiguration.getAuthenticationManager(), jwtTokenConfig,
+                        userRepository, revokedTokenService))
                 .addFilterAfter(new UserOwnershipFilter(), JwtValidationFilter.class)
                 .addFilterAfter(new AuditFilter(auditEventService), UserOwnershipFilter.class)
                 .csrf(config -> config.disable())

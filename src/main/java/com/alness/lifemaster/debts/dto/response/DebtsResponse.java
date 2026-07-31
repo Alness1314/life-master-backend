@@ -35,4 +35,8 @@ public class DebtsResponse {
     private BigDecimal paidAmount;
     private BigDecimal outstandingAmount;
     private BigDecimal progressPercentage;
+    private Boolean disbursesFunds;
+    private BigDecimal receivedAmount;
+    private LocalDate receivedDate;
+    private UUID depositAccountId;
 }

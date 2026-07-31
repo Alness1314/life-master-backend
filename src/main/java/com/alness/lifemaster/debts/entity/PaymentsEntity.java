@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 import com.alness.lifemaster.finance.paymentmethod.PaymentMethodEntity;
+import com.alness.lifemaster.finance.account.FinancialAccountEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,12 +31,22 @@ public class PaymentsEntity {
     @Column(name = "amount_paid", nullable = false, columnDefinition = "numeric(21,8)")
     private BigDecimal amountPaid;
 
+    @Column(name = "principal_amount", nullable = false, columnDefinition = "numeric(21,8)")
+    private BigDecimal principalAmount;
+
+    @Column(name = "interest_amount", nullable = false, columnDefinition = "numeric(21,8)")
+    private BigDecimal interestAmount;
+
     @Column(name = "payment_method", nullable = true, columnDefinition = "character varying(256)")
     private String paymentMethod;
 
     @ManyToOne
     @JoinColumn(name = "payment_method_id")
     private PaymentMethodEntity paymentMethodEntity;
+
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    private FinancialAccountEntity account;
 
     @Column(name = "is_paid", nullable = false, columnDefinition = "boolean")
     private Boolean isPaid;

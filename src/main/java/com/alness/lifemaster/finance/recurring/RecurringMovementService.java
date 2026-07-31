@@ -6,6 +6,7 @@ import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import com.alness.lifemaster.categories.repository.CategoryRepository;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
@@ -99,6 +100,42 @@ public class RecurringMovementService {
             }
             repository.save(recurring);
         }
+        return new RecurringGenerationResponse(through, expenses, income);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public RecurringGenerationResponse generateOneDue(UUID recurringId, LocalDate through) {
+        RecurringMovementEntity recurring = repository.findActiveByIdForUpdate(recurringId)
+                .orElse(null);
+        if (recurring == null || recurring.getNextExecutionDate().isAfter(through)) {
+            return new RecurringGenerationResponse(through, 0, 0);
+        }
+
+        int expenses = 0;
+        int income = 0;
+        int generated = 0;
+        while (!recurring.getNextExecutionDate().isAfter(through)
+                && (recurring.getEndDate() == null
+                        || !recurring.getNextExecutionDate().isAfter(recurring.getEndDate()))) {
+            if (++generated > MAX_GENERATED_PER_REQUEST) {
+                throw new RestExceptionHandler(ApiCodes.API_CODE_400, HttpStatus.BAD_REQUEST,
+                        "Se excedió el límite de movimientos generados; revisa la configuración recurrente.");
+            }
+            if (recurring.getMovementType() == MovementType.EXPENSE) {
+                createExpense(recurring);
+                expenses++;
+            } else {
+                createIncome(recurring);
+                income++;
+            }
+            recurring.setNextExecutionDate(recurring.getFrequency()
+                    .next(recurring.getNextExecutionDate(), recurring.getStartDate()));
+        }
+        if (recurring.getEndDate() != null
+                && recurring.getNextExecutionDate().isAfter(recurring.getEndDate())) {
+            recurring.setActive(false);
+        }
+        repository.save(recurring);
         return new RecurringGenerationResponse(through, expenses, income);
     }
 

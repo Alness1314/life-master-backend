@@ -26,8 +26,12 @@ public class DateTimeUtils {
     }
 
     public static LocalDateTime parseToLocalDateTime(String dateTime) {
-		DateTimeFormatter formatterIn = DateTimeFormatter.ofPattern(PATTERN_DATETIME_ISO);
-		return LocalDateTime.parse(dateTime, formatterIn);
+		try {
+			return LocalDateTime.parse(dateTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		} catch (DateTimeParseException ex) {
+			DateTimeFormatter formatterIn = DateTimeFormatter.ofPattern(PATTERN_DATETIME_ISO);
+			return LocalDateTime.parse(dateTime, formatterIn);
+		}
 	}
 
 

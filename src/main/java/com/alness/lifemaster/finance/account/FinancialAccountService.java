@@ -15,6 +15,7 @@ import com.alness.lifemaster.expenses.entity.ExpensesEntity;
 import com.alness.lifemaster.expenses.repository.ExpensesRepository;
 import com.alness.lifemaster.income.entity.IncomeEntity;
 import com.alness.lifemaster.income.repository.IncomeRepository;
+import com.alness.lifemaster.debts.repository.DebtsRespository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +27,7 @@ public class FinancialAccountService {
     private final UserRepository userRepository;
     private final ExpensesRepository expensesRepository;
     private final IncomeRepository incomeRepository;
+    private final DebtsRespository debtsRepository;
 
     @Transactional(readOnly = true)
     public List<FinancialAccountResponse> findAll(UUID userId) {
@@ -85,14 +87,32 @@ public class FinancialAccountService {
                 });
     }
 
-    private FinancialAccountResponse toResponse(FinancialAccountEntity entity) {
+    @Transactional(readOnly = true)
+    public FinancialAccountResponse toResponse(FinancialAccountEntity entity) {
         java.math.BigDecimal income = incomeRepository.findAllByAccountIdAndErasedFalse(entity.getId()).stream()
                 .map(IncomeEntity::getAmount).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
         java.math.BigDecimal expenses = expensesRepository.findAllByAccountIdAndErasedFalse(entity.getId()).stream()
+                .filter(expense -> Boolean.TRUE.equals(expense.getPaymentStatus()))
                 .map(ExpensesEntity::getAmount).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal debtProceeds = debtsRepository.findAllByUserIdAndErasedFalse(entity.getUser().getId())
+                .stream()
+                .filter(debt -> Boolean.TRUE.equals(debt.getDisbursesFunds()))
+                .filter(debt -> entity.getId().equals(debt.getDepositAccount() == null
+                        ? null : debt.getDepositAccount().getId()))
+                .map(debt -> debt.getReceivedAmount() == null ? java.math.BigDecimal.ZERO : debt.getReceivedAmount())
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal debtPayments = debtsRepository.findAllByUserIdAndErasedFalse(entity.getUser().getId())
+                .stream()
+                .flatMap(debt -> debt.getPayments().stream())
+                .filter(payment -> Boolean.TRUE.equals(payment.getIsPaid()))
+                .filter(payment -> entity.getId().equals(payment.getAccount() == null
+                        ? null : payment.getAccount().getId()))
+                .map(payment -> payment.getAmountPaid())
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
         return new FinancialAccountResponse(entity.getId(), entity.getName(), entity.getAccountType(),
                 entity.getCurrency(), entity.getInitialBalance(),
-                entity.getInitialBalance().add(income).subtract(expenses), entity.getActive());
+                entity.getInitialBalance().add(income).add(debtProceeds).subtract(expenses).subtract(debtPayments),
+                entity.getActive());
     }
 
     private RestExceptionHandler notFound(Object id) {

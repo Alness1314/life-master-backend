@@ -21,13 +21,12 @@ Todos los recursos financieros se encuentran bajo
 
 - `/accounts`: cuentas financieras y saldo calculado.
 - `/payment-methods`: medios de pago, opcionalmente asociados a una cuenta.
-- `/budgets?year=YYYY&month=M`: presupuestos generales o por categoría.
 - `/recurring-movements`: definiciones recurrentes.
 - `/recurring-movements/generate?through=YYYY-MM-DD`: materialización transaccional e idempotente.
 - `/financial-summary/monthly?year=YYYY&month=M&currency=MXN`: resumen mensual por moneda.
 - `/reports/monthly.csv`: exportación mensual.
-- `/bank-imports/csv`: vista previa y confirmación de movimientos bancarios.
-- `/alerts`: alertas presupuestales, de deuda y recurrencias.
+- `/bank-imports/file`: vista previa y confirmación de CSV o Excel; conserva `/csv` por compatibilidad.
+- `/alerts`: alertas de deuda y recurrencias.
 - `/reminders`: recordatorios programados.
 - `/expenses/{expenseId}/receipts`: comprobantes PDF o imagen.
 

@@ -15,7 +15,9 @@ public final class DebtCalculator {
         }
         return debt.getPayments().stream()
                 .filter(payment -> Boolean.TRUE.equals(payment.getIsPaid()))
-                .map(PaymentsEntity::getAmountPaid)
+                .map(payment -> payment.getPrincipalAmount() == null
+                        ? payment.getAmountPaid()
+                        : payment.getPrincipalAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
