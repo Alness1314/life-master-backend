@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -204,6 +205,7 @@ public class ModuleServiceImpl implements ModuleService {
                 .id(module.getId())
                 .name(module.getName())
                 .route(module.getRoute())
+                .permissionKey(module.getPermissionKey())
                 .iconName(module.getIconName())
                 .description(module.getDescription())
                 .level(module.getLevel())
@@ -239,9 +241,14 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     private void grantFullAccessToNewAssignments(ModuleEntity module) {
+        Set<PermissionId> assignedIds = module.getProfiles().stream()
+                .map(profile -> new PermissionId(profile.getId(), module.getId()))
+                .collect(java.util.stream.Collectors.toSet());
+        Set<PermissionId> existingIds = permissionRepository.findAllById(assignedIds).stream()
+                .map(PermissionEntity::getId)
+                .collect(java.util.stream.Collectors.toSet());
         List<PermissionEntity> missingPermissions = module.getProfiles().stream()
-                .filter(profile -> !permissionRepository.existsById(
-                        new PermissionId(profile.getId(), module.getId())))
+                .filter(profile -> !existingIds.contains(new PermissionId(profile.getId(), module.getId())))
                 .map(profile -> {
                     PermissionEntity permission = new PermissionEntity();
                     permission.setId(new PermissionId(profile.getId(), module.getId()));
