@@ -24,6 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare Maven Wrapper
+        run: chmod +x mvnw
+
       - name: Test
         run: ./mvnw -B test
 
