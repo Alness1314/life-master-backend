@@ -23,6 +23,8 @@ public class ModuleRequest {
     @NotBlank
     @Size(max = 256)
     private String route;
+    @Size(max = 64)
+    private String permissionKey;
     @Size(max = 128)
     private String iconName;
     @NotBlank

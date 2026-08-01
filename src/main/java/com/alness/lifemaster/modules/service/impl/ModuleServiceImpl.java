@@ -3,6 +3,7 @@ package com.alness.lifemaster.modules.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,6 +25,9 @@ import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.modules.repository.ModuleRepository;
 import com.alness.lifemaster.modules.service.ModuleService;
 import com.alness.lifemaster.modules.specification.ModuleSpecification;
+import com.alness.lifemaster.permissions.entity.PermissionEntity;
+import com.alness.lifemaster.permissions.entity.PermissionId;
+import com.alness.lifemaster.permissions.repository.PermissionRepository;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.dto.response.ProfileResponse;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
@@ -38,11 +42,13 @@ import lombok.RequiredArgsConstructor;
 public class ModuleServiceImpl implements ModuleService {
     private final ModuleRepository moduleRepository;
     private final ProfileRepository profileRepository;
+    private final PermissionRepository permissionRepository;
     private final GenericMapper mapper;
 
     @Override
     public ModuleResponse createModule(ModuleRequest module) {
         ModuleEntity newModule = mapper.map(module, ModuleEntity.class);
+        newModule.setPermissionKey(normalizePermissionKey(module.getPermissionKey(), module.getRoute()));
         try {
             for (String profileName : module.getProfile()) {
                 ProfileEntity profile = profileRepository.findById(UUID.fromString(profileName)).orElse(null);
@@ -52,7 +58,8 @@ public class ModuleServiceImpl implements ModuleService {
                     profile.getModules().add(newModule); // Actualiza el otro lado de la relación
                 }
             }
-            newModule = moduleRepository.save(newModule);
+            newModule = moduleRepository.saveAndFlush(newModule);
+            grantFullAccessToNewAssignments(newModule);
             return mapperModule(newModule);
         } catch (DataIntegrityViolationException ex) {
             LoggerUtil.logError(ex);
@@ -79,6 +86,7 @@ public class ModuleServiceImpl implements ModuleService {
             // Actualizar campos básicos
             existingModule.setName(request.getName());
             existingModule.setRoute(request.getRoute());
+            existingModule.setPermissionKey(normalizePermissionKey(request.getPermissionKey(), request.getRoute()));
             existingModule.setIconName(request.getIconName());
             existingModule.setLevel(request.getLevel());
             existingModule.setDescription(request.getDescription());
@@ -99,7 +107,8 @@ public class ModuleServiceImpl implements ModuleService {
                 }
             }
 
-            ModuleEntity updated = moduleRepository.save(existingModule);
+            ModuleEntity updated = moduleRepository.saveAndFlush(existingModule);
+            grantFullAccessToNewAssignments(updated);
             return mapperModule(updated);
 
         } catch (DataIntegrityViolationException ex) {
@@ -218,6 +227,34 @@ public class ModuleServiceImpl implements ModuleService {
 
     public Specification<ModuleEntity> filterWithParameters(Map<String, String> parameters) {
         return new ModuleSpecification().getSpecificationByFilters(parameters);
+    }
+
+    private String normalizePermissionKey(String permissionKey, String route) {
+        String source = permissionKey == null || permissionKey.isBlank() ? route : permissionKey;
+        if (source == null) {
+            return null;
+        }
+        String normalized = source.trim().replaceAll("^/+|/+$", "").toLowerCase(Locale.ROOT);
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private void grantFullAccessToNewAssignments(ModuleEntity module) {
+        List<PermissionEntity> missingPermissions = module.getProfiles().stream()
+                .filter(profile -> !permissionRepository.existsById(
+                        new PermissionId(profile.getId(), module.getId())))
+                .map(profile -> {
+                    PermissionEntity permission = new PermissionEntity();
+                    permission.setId(new PermissionId(profile.getId(), module.getId()));
+                    permission.setProfile(profile);
+                    permission.setModule(module);
+                    permission.setCanCreate(true);
+                    permission.setCanRead(true);
+                    permission.setCanUpdate(true);
+                    permission.setCanDelete(true);
+                    return permission;
+                })
+                .toList();
+        permissionRepository.saveAll(missingPermissions);
     }
 
     @SuppressWarnings("null")

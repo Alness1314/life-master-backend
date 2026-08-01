@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -26,6 +27,8 @@ import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.common.validation.GenericExistenceValidator;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
+import com.alness.lifemaster.permissions.service.EffectivePermission;
+import com.alness.lifemaster.permissions.service.EffectivePermissionService;
 import com.alness.lifemaster.users.dto.request.UserSelfUpdateRequest;
 import com.alness.lifemaster.users.dto.response.UserResponse;
 import com.alness.lifemaster.users.entity.UserEntity;
@@ -45,6 +48,8 @@ class UserSelfUpdateTests {
     private GenericMapper mapper;
     @Mock
     private StoredFileRepository storedFileRepository;
+    @Mock
+    private EffectivePermissionService effectivePermissionService;
 
     private UserServiceImpl service;
     private UUID userId;
@@ -58,7 +63,8 @@ class UserSelfUpdateTests {
                 passwordEncoder,
                 mapper,
                 new GenericExistenceValidator(),
-                storedFileRepository);
+                storedFileRepository,
+                effectivePermissionService);
         userId = UUID.randomUUID();
         user = new UserEntity();
         user.setId(userId);
@@ -128,10 +134,30 @@ class UserSelfUpdateTests {
         profile.setErased(false);
         profile.setModules(Set.of(sidebar, menu));
         user.setProfiles(List.of(profile));
+        when(effectivePermissionService.findEffectivePermissions(user)).thenReturn(Map.of(
+                sidebar.getId(), new EffectivePermission(sidebar.getId(), true, true, true, true),
+                menu.getId(), new EffectivePermission(menu.getId(), true, true, true, true)));
 
         List<ModuleDto> modules = service.findCurrentUserModules(userId, "sidebar");
 
         assertThat(modules).extracting(ModuleDto::getName).containsExactly("Gastos");
+        assertThat(modules.get(0).getCanCreate()).isTrue();
+        assertThat(modules.get(0).getCanRead()).isTrue();
+    }
+
+    @Test
+    void hidesAssignedModulesWhenTheProfilesDoNotGrantReadPermission() {
+        ModuleEntity hidden = module("Auditoría", "/audit", "sidebar");
+        ProfileEntity profile = new ProfileEntity();
+        profile.setId(UUID.randomUUID());
+        profile.setName("User");
+        profile.setErased(false);
+        profile.setModules(Set.of(hidden));
+        user.setProfiles(List.of(profile));
+        when(effectivePermissionService.findEffectivePermissions(user)).thenReturn(Map.of(
+                hidden.getId(), new EffectivePermission(hidden.getId(), true, false, true, true)));
+
+        assertThat(service.findCurrentUserModules(userId, "sidebar")).isEmpty();
     }
 
     private ModuleEntity module(String name, String route, String level) {

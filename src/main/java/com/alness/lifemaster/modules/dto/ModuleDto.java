@@ -15,10 +15,15 @@ public class ModuleDto {
     private String id;
     private String name;
     private String route;
+    private String permissionKey;
     private String iconName;
     private String level;
     private String description;
     private Boolean erased;
     private Boolean isParent;
+    private Boolean canCreate;
+    private Boolean canRead;
+    private Boolean canUpdate;
+    private Boolean canDelete;
     
 }

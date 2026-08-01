@@ -24,6 +24,7 @@ import com.alness.lifemaster.common.dto.ValueExistenceResponse;
 import com.alness.lifemaster.common.validation.GenericExistenceValidator;
 import com.alness.lifemaster.common.keys.Filters;
 import com.alness.lifemaster.common.messages.Messages;
+import com.alness.lifemaster.common.enums.AllowedProfiles;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.files.StoredFileRepository;
 import com.alness.lifemaster.mapper.GenericMapper;
@@ -31,6 +32,8 @@ import com.alness.lifemaster.modules.dto.ModuleDto;
 import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
+import com.alness.lifemaster.permissions.service.EffectivePermission;
+import com.alness.lifemaster.permissions.service.EffectivePermissionService;
 import com.alness.lifemaster.users.dto.CustomUser;
 import com.alness.lifemaster.users.dto.request.UserRequest;
 import com.alness.lifemaster.users.dto.request.UserSelfUpdateRequest;
@@ -55,6 +58,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final GenericMapper mapper;
     private final GenericExistenceValidator existenceValidator;
     private final StoredFileRepository storedFileRepository;
+    private final EffectivePermissionService effectivePermissionService;
 
     @Override
     public UserResponse save(UserRequest request) {
@@ -121,6 +125,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public List<ModuleDto> findCurrentUserModules(UUID userId, String level) {
         UserEntity user = findActiveUser(userId);
         Map<UUID, ModuleEntity> modules = new LinkedHashMap<>();
+        boolean administrator = user.getProfiles().stream()
+                .anyMatch(profile -> AllowedProfiles.ADMIN.getName().equals(profile.getName()));
+        Map<UUID, EffectivePermission> permissions = administrator
+                ? Map.of()
+                : effectivePermissionService.findEffectivePermissions(user);
 
         user.getProfiles().stream()
                 .filter(profile -> !Boolean.TRUE.equals(profile.getErased()))
@@ -128,10 +137,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 .filter(module -> !Boolean.TRUE.equals(module.getErased()))
                 .filter(module -> level == null || level.isBlank()
                         || level.equalsIgnoreCase(module.getLevel()))
+                .filter(module -> administrator
+                        || permissions.getOrDefault(module.getId(), denied(module.getId())).canRead())
                 .forEach(module -> modules.putIfAbsent(module.getId(), module));
 
         return modules.values().stream()
-                .map(this::mapModuleDto)
+                .map(module -> mapModuleDto(module, administrator
+                        ? allowed(module.getId())
+                        : permissions.get(module.getId())))
                 .toList();
     }
 
@@ -304,17 +317,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                         Messages.NOT_FOUND_BASIC));
     }
 
-    private ModuleDto mapModuleDto(ModuleEntity module) {
+    private ModuleDto mapModuleDto(ModuleEntity module, EffectivePermission permission) {
         return ModuleDto.builder()
                 .id(module.getId().toString())
                 .name(module.getName())
                 .route(module.getRoute())
+                .permissionKey(module.getPermissionKey())
                 .iconName(module.getIconName())
                 .level(module.getLevel())
                 .description(module.getDescription())
                 .erased(module.getErased())
                 .isParent(module.getIsParent())
+                .canCreate(permission.canCreate())
+                .canRead(permission.canRead())
+                .canUpdate(permission.canUpdate())
+                .canDelete(permission.canDelete())
                 .build();
+    }
+
+    private EffectivePermission allowed(UUID moduleId) {
+        return new EffectivePermission(moduleId, true, true, true, true);
+    }
+
+    private EffectivePermission denied(UUID moduleId) {
+        return new EffectivePermission(moduleId, false, false, false, false);
     }
 
     public Specification<UserEntity> filterWithParameters(Map<String, String> parameters) {

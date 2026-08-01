@@ -17,6 +17,7 @@ import com.alness.lifemaster.common.validation.ValueExistence;
 import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.files.StoredFileRepository;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
+import com.alness.lifemaster.permissions.service.EffectivePermissionService;
 import com.alness.lifemaster.users.repository.UserRepository;
 import com.alness.lifemaster.users.service.impl.UserServiceImpl;
 
@@ -34,7 +35,8 @@ class UserExistenceValidationTests {
                 mock(PasswordEncoder.class),
                 mock(GenericMapper.class),
                 new GenericExistenceValidator(),
-                mock(StoredFileRepository.class));
+                mock(StoredFileRepository.class),
+                mock(EffectivePermissionService.class));
     }
 
     @Test

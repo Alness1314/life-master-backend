@@ -40,6 +40,9 @@ public class ModuleEntity {
     @Column(name = "route", nullable = false)
     private String route;
 
+    @Column(name = "permission_key", length = 64)
+    private String permissionKey;
+
     @Column(name = "icon_name")
     private String iconName;
 

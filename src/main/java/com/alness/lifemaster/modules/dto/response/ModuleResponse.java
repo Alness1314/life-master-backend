@@ -19,6 +19,7 @@ public class ModuleResponse {
     private UUID id;
     private String name;
     private String route;
+    private String permissionKey;
     private String iconName;
     private Boolean erased;
     private String level;

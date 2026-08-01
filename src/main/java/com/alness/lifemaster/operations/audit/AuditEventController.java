@@ -3,14 +3,12 @@ package com.alness.lifemaster.operations.audit;
 import java.util.*;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("${api.prefix}/audit-events")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('Administrator')")
 public class AuditEventController {
     private final AuditEventService service;
     @GetMapping

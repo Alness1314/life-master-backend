@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +27,19 @@ class CustomExceptionHandlerTests {
                     + "SQL [insert into users ...]";
 
     private final CustomExceptionHandler handler = new CustomExceptionHandler();
+
+    @Test
+    void accessDeniedErrorsReturnForbiddenInsteadOfInternalServerError() {
+        ResponseEntity<ErrorResponse> response =
+                handler.accessDeniedExceptionHandler(new AccessDeniedException("Access Denied"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo(ApiCodes.API_CODE_403);
+        assertThat(response.getBody().getMessage())
+                .isEqualTo("No tienes permisos para realizar esta operación.")
+                .doesNotContain("Access Denied");
+    }
 
     @Test
     void springRoutesDataIntegrityErrorsToTheSafeConflictResponse() throws Exception {
