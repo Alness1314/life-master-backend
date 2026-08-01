@@ -2,6 +2,7 @@ package com.alness.lifemaster.users.service.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +27,8 @@ import com.alness.lifemaster.common.messages.Messages;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.files.StoredFileRepository;
 import com.alness.lifemaster.mapper.GenericMapper;
+import com.alness.lifemaster.modules.dto.ModuleDto;
+import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
 import com.alness.lifemaster.users.dto.CustomUser;
@@ -105,6 +108,31 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(Messages.NOT_FOUND, id)));
         return mapperDto(findUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse findCurrentUser(UUID userId) {
+        return mapperDto(findActiveUser(userId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ModuleDto> findCurrentUserModules(UUID userId, String level) {
+        UserEntity user = findActiveUser(userId);
+        Map<UUID, ModuleEntity> modules = new LinkedHashMap<>();
+
+        user.getProfiles().stream()
+                .filter(profile -> !Boolean.TRUE.equals(profile.getErased()))
+                .flatMap(profile -> profile.getModules().stream())
+                .filter(module -> !Boolean.TRUE.equals(module.getErased()))
+                .filter(module -> level == null || level.isBlank()
+                        || level.equalsIgnoreCase(module.getLevel()))
+                .forEach(module -> modules.putIfAbsent(module.getId(), module));
+
+        return modules.values().stream()
+                .map(this::mapModuleDto)
+                .toList();
     }
 
     @Override
@@ -265,6 +293,28 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     private UserResponse mapperDto(UserEntity source) {
         return mapper.map(source, UserResponse.class);
+    }
+
+    private UserEntity findActiveUser(UUID userId) {
+        return userRepository.findById(userId)
+                .filter(user -> !Boolean.TRUE.equals(user.getErased()))
+                .orElseThrow(() -> new RestExceptionHandler(
+                        ApiCodes.API_CODE_404,
+                        HttpStatus.NOT_FOUND,
+                        Messages.NOT_FOUND_BASIC));
+    }
+
+    private ModuleDto mapModuleDto(ModuleEntity module) {
+        return ModuleDto.builder()
+                .id(module.getId().toString())
+                .name(module.getName())
+                .route(module.getRoute())
+                .iconName(module.getIconName())
+                .level(module.getLevel())
+                .description(module.getDescription())
+                .erased(module.getErased())
+                .isParent(module.getIsParent())
+                .build();
     }
 
     public Specification<UserEntity> filterWithParameters(Map<String, String> parameters) {

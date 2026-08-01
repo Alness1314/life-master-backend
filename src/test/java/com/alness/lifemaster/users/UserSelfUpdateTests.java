@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.alness.lifemaster.exceptions.RestExceptionHandler;
 import com.alness.lifemaster.mapper.GenericMapper;
 import com.alness.lifemaster.files.StoredFileRepository;
+import com.alness.lifemaster.modules.dto.ModuleDto;
+import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.common.validation.GenericExistenceValidator;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
 import com.alness.lifemaster.profiles.repository.ProfileRepository;
@@ -100,5 +103,45 @@ class UserSelfUpdateTests {
                 .isInstanceOf(RestExceptionHandler.class)
                 .hasMessageContaining("al menos un campo");
         verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void returnsCurrentUserWithoutUsingAdministratorEndpoint() {
+        UserResponse response = UserResponse.builder()
+                .id(userId)
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .build();
+        when(mapper.map(user, UserResponse.class)).thenReturn(response);
+
+        UserResponse result = service.findCurrentUser(userId);
+
+        assertThat(result.getFullName()).isEqualTo("Nombre original");
+        assertThat(result.getUsername()).isEqualTo("original@example.com");
+    }
+
+    @Test
+    void returnsDistinctModulesAssignedToCurrentUserProfilesByLevel() {
+        ModuleEntity sidebar = module("Gastos", "/expenses", "sidebar");
+        ModuleEntity menu = module("Configuración", "/settings", "menu");
+        ProfileEntity profile = new ProfileEntity();
+        profile.setErased(false);
+        profile.setModules(Set.of(sidebar, menu));
+        user.setProfiles(List.of(profile));
+
+        List<ModuleDto> modules = service.findCurrentUserModules(userId, "sidebar");
+
+        assertThat(modules).extracting(ModuleDto::getName).containsExactly("Gastos");
+    }
+
+    private ModuleEntity module(String name, String route, String level) {
+        ModuleEntity module = new ModuleEntity();
+        module.setId(UUID.randomUUID());
+        module.setName(name);
+        module.setRoute(route);
+        module.setLevel(level);
+        module.setErased(false);
+        module.setIsParent(false);
+        return module;
     }
 }
