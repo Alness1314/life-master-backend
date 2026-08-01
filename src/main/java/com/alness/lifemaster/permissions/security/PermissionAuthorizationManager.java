@@ -21,7 +21,7 @@ public class PermissionAuthorizationManager implements AuthorizationManager<Requ
     private final EffectivePermissionService effectivePermissionService;
 
     @Override
-    public AuthorizationDecision authorize(
+    public AuthorizationDecision check(
             Supplier<Authentication> authenticationSupplier,
             RequestAuthorizationContext context) {
         Authentication authentication = authenticationSupplier.get();
