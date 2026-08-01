@@ -1,0 +1,13 @@
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,diskSpace
+        liveness:
+          include: livenessState,ping
+  health:
+    mail:
+      enabled: false

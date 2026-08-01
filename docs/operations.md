@@ -1,9 +1,52 @@
 # Operación de LifeMaster
 
-## Estado actual
+## Despliegue de producción
 
-No existe un servidor configurado. El flujo de CI ejecuta pruebas, genera el JAR
-y valida la imagen Docker, pero no publica ni despliega a ningún ambiente.
+El backend se despliega en `nidum-server` mediante el workflow
+`.github/workflows/deploy.yml`. Un runner autoalojado ejecuta las pruebas,
+construye una imagen Docker etiquetada con el SHA del commit y actualiza el
+contenedor local. El workflow de despliegue solo se ejecuta para
+`development` o manualmente mediante `workflow_dispatch`; los pull requests no
+se ejecutan en el runner del servidor.
+
+La base PostgreSQL es externa y no forma parte del Compose. Su URL, usuario y
+contraseña se administran como secretos del ambiente `development` de GitHub.
+La API no publica puertos en el host: ngrok la alcanza como
+`http://lifemaster-api:8080` mediante la red Docker externa `backend-net`.
+
+Archivos de producción en el servidor:
+
+```text
+/home/albert/apps/lifemaster-backend/compose.yml
+/home/albert/apps/lifemaster-backend/.env
+```
+
+El `.env` se genera durante el despliegue con permisos `600` y nunca se
+versiona. Los archivos cargados por los usuarios se conservan en el volumen
+Docker `lifemaster_files_data`.
+
+Secretos requeridos en el ambiente GitHub `development`:
+
+- `DB_URL_NAME`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `DEFAULT_PASS`
+- `EMAIL_USERNAME`
+- `EMAIL_PASSWORD`
+
+Variables recomendadas del ambiente:
+
+- `EMAIL_HOST`
+- `EMAIL_PORT`
+- `SERVER_URL`
+- `SERVER_DESCRIPTION`
+- `CORS_ALLOWED_ORIGINS`
+- `REMINDERS_ENABLED`
+
+La cuenta de PostgreSQL debe aceptar conexiones desde el servidor, exigir TLS
+cuando el proveedor lo soporte y tener permisos para ejecutar las migraciones
+Flyway.
 
 ## Ejecución local
 
@@ -17,6 +60,8 @@ Las credenciales de `docker-compose.yml` son exclusivamente locales.
 ## Observabilidad
 
 - `GET /actuator/health` es público para verificaciones de salud.
+- `GET /actuator/health/liveness` comprueba el proceso Java.
+- `GET /actuator/health/readiness` comprueba aplicación, disco y PostgreSQL.
 - `GET /actuator/info` y `/actuator/metrics` requieren rol `Administrator`.
 - Cada respuesta incluye `X-Correlation-ID`.
 - Las operaciones POST, PUT, PATCH y DELETE generan un evento de auditoría.
@@ -64,9 +109,16 @@ Variables opcionales:
 
 - `BANK_IMPORT_MAX_SIZE_BYTES` (`20971520` por defecto).
 
-## Preparación de un despliegue futuro
+## Comandos en el servidor
 
-Cuando exista un servidor se deberán definir secretos reales, TLS, dominio,
-almacenamiento de respaldo, SMTP y monitoreo externo. El despliegue deberá
-consumir el JAR o la imagen validada por CI, nunca compilar directamente en el
-servidor.
+```bash
+cd /home/albert/apps/lifemaster-backend
+docker compose --env-file .env --file compose.yml ps
+docker compose --env-file .env --file compose.yml logs --follow --tail 200 api
+docker exec lifemaster-api curl --fail --silent \
+  http://127.0.0.1:8080/actuator/health/readiness
+```
+
+El workflow conserva la imagen anterior con la etiqueta
+`life-master-backend:rollback`. El procedimiento definitivo de rollback y
+restauración se documentará después de validar el primer despliegue real.

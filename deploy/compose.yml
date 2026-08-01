@@ -1,0 +1,35 @@
+name: lifemaster
+
+services:
+  api:
+    image: life-master-backend:${APP_IMAGE_TAG:?APP_IMAGE_TAG is required}
+    container_name: lifemaster-api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        format: raw
+    volumes:
+      - lifemaster_files_data:/app/data/files
+    networks:
+      - backend-net
+    expose:
+      - "8080"
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - http://127.0.0.1:8080/actuator/health/readiness
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+volumes:
+  lifemaster_files_data:
+
+networks:
+  backend-net:
+    external: true

@@ -7,7 +7,10 @@ COPY src src
 RUN ./mvnw -B -DskipTests package
 
 FROM eclipse-temurin:17-jre-jammy
-RUN groupadd --system lifemaster \
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system lifemaster \
     && useradd --system --gid lifemaster --no-create-home lifemaster
 WORKDIR /app
 COPY --from=build /workspace/target/life-master-0.0.1-SNAPSHOT.jar app.jar
