@@ -60,7 +60,7 @@ public class SpringSecurityConfig {
         http.authorizeHttpRequests(
                 request -> request.requestMatchers("/", jwtTokenConfig.getApiPrefix() + "/auth").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/api-docs/**").hasAuthority("Administrator")
+                        .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").hasAuthority("Administrator")
                         .anyRequest().authenticated())
                 .addFilterAt(authenticationFilter, UsernamePasswordAuthenticationFilter.class)

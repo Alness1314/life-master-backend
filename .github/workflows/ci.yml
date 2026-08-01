@@ -66,6 +66,7 @@ jobs:
           SERVER_URL: ${{ vars.SERVER_URL || 'https://goniac-mervin-lactationally.ngrok-free.dev' }}
           SERVER_DESCRIPTION: ${{ vars.SERVER_DESCRIPTION || 'LifeMaster development' }}
           CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS || 'https://life-master-frontend-v2.vercel.app' }}
+          SWAGGER_ENABLED: ${{ vars.SWAGGER_ENABLED || 'true' }}
           REMINDERS_ENABLED: ${{ vars.REMINDERS_ENABLED || 'false' }}
         run: |
           set -eu
@@ -95,7 +96,7 @@ jobs:
             printf 'SERVER_URL=%s\n' "$SERVER_URL"
             printf 'SERVER_DESCRIPTION=%s\n' "$SERVER_DESCRIPTION"
             printf 'CORS_ALLOWED_ORIGINS=%s\n' "$CORS_ALLOWED_ORIGINS"
-            printf 'SWAGGER_ENABLED=false\n'
+            printf 'SWAGGER_ENABLED=%s\n' "$SWAGGER_ENABLED"
             printf 'REMINDERS_ENABLED=%s\n' "$REMINDERS_ENABLED"
             printf 'RECURRING_SCHEDULER_ENABLED=true\n'
             printf 'FINANCIAL_ALERTS_SCHEDULER_ENABLED=true\n'

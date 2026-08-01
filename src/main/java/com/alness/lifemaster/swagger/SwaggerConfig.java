@@ -54,6 +54,6 @@ public class SwaggerConfig {
 				.type(SecurityScheme.Type.HTTP)
 				.scheme(SCHEME)
 				.bearerFormat(BEARER_FORMAT)
-				.description("Enter your JWT token in the format: Bearer {token}");
+				.description("Pega únicamente el token JWT; Swagger agrega automáticamente el prefijo Bearer.");
 	}
 }
