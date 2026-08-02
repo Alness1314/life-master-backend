@@ -22,6 +22,8 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
+    volumes:
+      - lifemaster_files_data:/app/data/files
     environment:
       PORT: 8080
       PREFIX: /api/v1
@@ -42,3 +44,4 @@ services:
 
 volumes:
   lifemaster_pg:
+  lifemaster_files_data:

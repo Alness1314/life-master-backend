@@ -12,7 +12,10 @@ import com.alness.lifemaster.utils.ApiCodes;
 
 import org.springframework.http.HttpStatus;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class LocalFileStorage implements FileStorage {
     private final Path root;
 
@@ -93,6 +96,7 @@ public class LocalFileStorage implements FileStorage {
     }
 
     private RestExceptionHandler storageError(Exception exception) {
+        log.error("No se pudo escribir en el almacenamiento local configurado en {}.", root, exception);
         return new RestExceptionHandler(ApiCodes.API_CODE_500, HttpStatus.INTERNAL_SERVER_ERROR,
                 "No se pudo completar la operación de almacenamiento.");
     }

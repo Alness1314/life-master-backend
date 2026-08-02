@@ -1,10 +1,24 @@
 name: lifemaster
 
 services:
+  files-init:
+    image: life-master-backend:${APP_IMAGE_TAG:?APP_IMAGE_TAG is required}
+    user: "0:0"
+    entrypoint:
+      - sh
+      - -c
+      - chown -R lifemaster:lifemaster /app/data/files
+    restart: "no"
+    volumes:
+      - lifemaster_files_data:/app/data/files
+
   api:
     image: life-master-backend:${APP_IMAGE_TAG:?APP_IMAGE_TAG is required}
     container_name: lifemaster-api
     restart: unless-stopped
+    depends_on:
+      files-init:
+        condition: service_completed_successfully
     env_file:
       - path: .env
         format: raw

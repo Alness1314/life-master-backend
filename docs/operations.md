@@ -23,7 +23,11 @@ Archivos de producción en el servidor:
 
 El `.env` se genera durante el despliegue con permisos `600` y nunca se
 versiona. Los archivos cargados por los usuarios se conservan en el volumen
-Docker `lifemaster_files_data`.
+Docker del proyecto `lifemaster` asociado a `lifemaster_files_data`. El servicio
+temporal `files-init` ajusta los permisos del volumen antes de iniciar la API;
+no elimina archivos. Actualizar o reemplazar `lifemaster-api` conserva el
+contenido. No ejecutar `docker compose down --volumes` ni eliminar ese volumen
+durante una actualización o rollback.
 
 Secretos requeridos en el ambiente GitHub `development`:
 
