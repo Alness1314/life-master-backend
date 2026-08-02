@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,7 +38,14 @@ public class RecurringMovementService {
 
     @Transactional(readOnly = true)
     public List<RecurringMovementResponse> findAll(UUID userId) {
-        return repository.findAllByUserIdAndErasedFalseOrderByNextExecutionDate(userId)
+        return findAll(userId, Map.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecurringMovementResponse> findAll(UUID userId, Map<String, String> filters) {
+        return repository.findAll(
+                RecurringMovementSpecifications.from(userId, filters),
+                Sort.by(Sort.Direction.ASC, "nextExecutionDate"))
                 .stream().map(this::toResponse).toList();
     }
 

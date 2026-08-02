@@ -35,7 +35,7 @@ public class ModulesController {
     
     @GetMapping
     public ResponseEntity<List<ModuleResponse>> findAll(@RequestParam Map<String, String> param) {
-        List<ModuleResponse> response = moduleService.getAllModules();
+        List<ModuleResponse> response = moduleService.getAllModules(param);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

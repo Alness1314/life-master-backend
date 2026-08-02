@@ -156,7 +156,12 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Override
     public List<ModuleResponse> getAllModules() {
-        return moduleRepository.findAll().stream()
+        return getAllModules(Map.of());
+    }
+
+    @Override
+    public List<ModuleResponse> getAllModules(Map<String, String> params) {
+        return moduleRepository.findAll(filterWithParameters(params)).stream()
                 .filter(module -> module.getParent() == null) // Excluir los módulos asignados a un padre
                 .map(this::convertToDto).toList();
     }

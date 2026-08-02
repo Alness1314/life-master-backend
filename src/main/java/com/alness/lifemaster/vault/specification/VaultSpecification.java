@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.vault.entity.VaultEntity;
+import static com.alness.lifemaster.common.specification.FilterSpecifications.containsIgnoreCase;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -23,19 +24,21 @@ public class VaultSpecification implements Specification<VaultEntity> {
     }
 
     public Specification<VaultEntity> getSpecificationByFilters(Map<String, String> params) {
-        Specification<VaultEntity> specification = null;
+        Specification<VaultEntity> specification = notErased();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<VaultEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
-                case "site" -> filterBySite(entry.getValue());
+                case "site", "siteName" -> containsIgnoreCase("siteName", entry.getValue());
+                case "siteUrl", "username" -> containsIgnoreCase(entry.getKey(), entry.getValue());
                 case "user" -> filterByUser(entry.getValue());
                 default -> null;
             };
 
             if (currentFilter != null) {
-                specification = (specification == null)
-                        ? currentFilter
-                        : specification.and(currentFilter);
+                specification = specification.and(currentFilter);
             }
         }
         return specification;
@@ -52,9 +55,8 @@ public class VaultSpecification implements Specification<VaultEntity> {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
 
-    private Specification<VaultEntity> filterBySite(String siteName) {
-        return (root, query, cb) -> cb.equal(root.<String>get("siteName"), siteName);
-
+    private Specification<VaultEntity> notErased() {
+        return (root, query, cb) -> cb.isFalse(root.get("erased"));
     }
 
 }

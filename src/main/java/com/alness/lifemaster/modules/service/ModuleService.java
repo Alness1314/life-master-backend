@@ -15,6 +15,7 @@ public interface ModuleService {
     public ResponseServerDto deleteModule(String id);
     public ModuleResponse getModuleById(String id);
     public List<ModuleResponse> getAllModules();
+    public List<ModuleResponse> getAllModules(Map<String, String> params);
     public ModuleResponse assignChildToParent(String parentId, String childId);
     public List<ModuleDto> find(Map<String, String> params);
 }

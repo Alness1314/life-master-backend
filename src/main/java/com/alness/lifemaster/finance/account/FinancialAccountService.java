@@ -1,8 +1,10 @@
 package com.alness.lifemaster.finance.account;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +33,15 @@ public class FinancialAccountService {
 
     @Transactional(readOnly = true)
     public List<FinancialAccountResponse> findAll(UUID userId) {
-        return repository.findAllByUserIdAndErasedFalseOrderByName(userId).stream().map(this::toResponse).toList();
+        return findAll(userId, Map.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<FinancialAccountResponse> findAll(UUID userId, Map<String, String> filters) {
+        return repository.findAll(
+                FinancialAccountSpecifications.from(userId, filters),
+                Sort.by(Sort.Direction.ASC, "name"))
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)

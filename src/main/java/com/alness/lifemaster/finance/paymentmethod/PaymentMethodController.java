@@ -1,6 +1,7 @@
 package com.alness.lifemaster.finance.paymentmethod;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.*;
@@ -16,8 +17,9 @@ public class PaymentMethodController {
     private final PaymentMethodService service;
 
     @GetMapping
-    public List<PaymentMethodResponse> findAll(@PathVariable UUID userId) {
-        return service.findAll(userId);
+    public List<PaymentMethodResponse> findAll(@PathVariable UUID userId,
+            @RequestParam Map<String, String> filters) {
+        return service.findAll(userId, filters);
     }
 
     @GetMapping("/{id}")

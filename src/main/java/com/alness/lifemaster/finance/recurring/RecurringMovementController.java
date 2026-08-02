@@ -2,6 +2,7 @@ package com.alness.lifemaster.finance.recurring;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.*;
@@ -17,8 +18,9 @@ public class RecurringMovementController {
     private final RecurringMovementService service;
 
     @GetMapping
-    public List<RecurringMovementResponse> findAll(@PathVariable UUID userId) {
-        return service.findAll(userId);
+    public List<RecurringMovementResponse> findAll(@PathVariable UUID userId,
+            @RequestParam Map<String, String> filters) {
+        return service.findAll(userId, filters);
     }
 
     @GetMapping("/{id}")

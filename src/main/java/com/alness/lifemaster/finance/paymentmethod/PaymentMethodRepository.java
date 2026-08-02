@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface PaymentMethodRepository extends JpaRepository<PaymentMethodEntity, UUID> {
+public interface PaymentMethodRepository extends JpaRepository<PaymentMethodEntity, UUID>,
+        JpaSpecificationExecutor<PaymentMethodEntity> {
     List<PaymentMethodEntity> findAllByUserIdAndErasedFalseOrderByName(UUID userId);
     Optional<PaymentMethodEntity> findByIdAndUserIdAndErasedFalse(UUID id, UUID userId);
     Optional<PaymentMethodEntity> findByUserIdAndNameIgnoreCaseAndErasedFalse(UUID userId, String name);

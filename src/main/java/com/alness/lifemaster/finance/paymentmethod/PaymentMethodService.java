@@ -1,8 +1,10 @@
 package com.alness.lifemaster.finance.paymentmethod;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,15 @@ public class PaymentMethodService {
 
     @Transactional(readOnly = true)
     public List<PaymentMethodResponse> findAll(UUID userId) {
-        return repository.findAllByUserIdAndErasedFalseOrderByName(userId).stream().map(this::toResponse).toList();
+        return findAll(userId, Map.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentMethodResponse> findAll(UUID userId, Map<String, String> filters) {
+        return repository.findAll(
+                PaymentMethodSpecifications.from(userId, filters),
+                Sort.by(Sort.Direction.ASC, "name"))
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)

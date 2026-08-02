@@ -1,5 +1,7 @@
 package com.alness.lifemaster.assistance.specification;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,9 +27,16 @@ public class AssistanceSpecification implements Specification<AssistanceEntity> 
     public Specification<AssistanceEntity> getSpecificationByFilters(Map<String, String> params) {
         Specification<AssistanceEntity> specification = null;
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<AssistanceEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
                 case "user" -> filterByUser(entry.getValue());
+                case "workDate" -> exactDate(entry.getValue());
+                case "timeEntry", "departureTime" -> exactTime(entry.getKey(), entry.getValue());
+                case "onTime", "retard", "justifiedAbsence", "unjustifiedAbsence" ->
+                    exactBoolean(entry.getKey(), entry.getValue());
                 default -> null;
             };
             if (currentFilter != null) {
@@ -48,5 +57,17 @@ public class AssistanceSpecification implements Specification<AssistanceEntity> 
             Join<AssistanceEntity, UserEntity> userJoin = root.join("user");
             return criteriaBuilder.equal(userJoin.get("id"), UUID.fromString(userId));
         };
+    }
+
+    private Specification<AssistanceEntity> exactDate(String value) {
+        return (root, query, cb) -> cb.equal(root.<LocalDate>get("workDate"), LocalDate.parse(value));
+    }
+
+    private Specification<AssistanceEntity> exactTime(String field, String value) {
+        return (root, query, cb) -> cb.equal(root.<LocalTime>get(field), LocalTime.parse(value));
+    }
+
+    private Specification<AssistanceEntity> exactBoolean(String field, String value) {
+        return (root, query, cb) -> cb.equal(root.<Boolean>get(field), Boolean.valueOf(value));
     }
 }

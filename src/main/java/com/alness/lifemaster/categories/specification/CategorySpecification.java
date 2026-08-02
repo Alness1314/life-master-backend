@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.alness.lifemaster.categories.entity.CategoryEntity;
+import static com.alness.lifemaster.common.specification.FilterSpecifications.containsIgnoreCase;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -22,17 +23,18 @@ public class CategorySpecification implements Specification<CategoryEntity> {
 
     public Specification<CategoryEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<CategoryEntity> specification = null;
+        Specification<CategoryEntity> specification = notErased();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<CategoryEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
-                case "name" -> filterByName(entry.getValue());
+                case "name", "description" -> containsIgnoreCase(entry.getKey(), entry.getValue());
                 default -> null;
             };
             if (currentFilter != null) {
-                specification = (specification == null)
-                        ? currentFilter
-                        : specification.and(currentFilter);
+                specification = specification.and(currentFilter);
             }
         }
         return specification;
@@ -42,9 +44,8 @@ public class CategorySpecification implements Specification<CategoryEntity> {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
 
-    private Specification<CategoryEntity> filterByName(String name) {
-        return (root, query, cb) -> cb.equal(root.<String>get("name"), name);
-
+    private Specification<CategoryEntity> notErased() {
+        return (root, query, cb) -> cb.isFalse(root.get("erased"));
     }
 
 }

@@ -1,6 +1,7 @@
 package com.alness.lifemaster.exercises.spec;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -9,7 +10,7 @@ import org.springframework.lang.Nullable;
 
 import com.alness.lifemaster.exercises.entity.ExercisesEntity;
 import com.alness.lifemaster.users.entity.UserEntity;
-import com.alness.lifemaster.utils.DateTimeUtils;
+import static com.alness.lifemaster.common.specification.FilterSpecifications.containsIgnoreCase;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -29,18 +30,22 @@ public class ExercisesSpec implements Specification<ExercisesEntity> {
 
     public Specification<ExercisesEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<ExercisesEntity> specification = null;
+        Specification<ExercisesEntity> specification = notErased();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<ExercisesEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
-                case "date" -> filterByDate(entry.getValue());
+                case "date", "trainingDate" -> exactDate(entry.getValue());
+                case "activityType" -> containsIgnoreCase("activityType", entry.getValue());
+                case "startTime", "endTime" -> exactTime(entry.getKey(), entry.getValue());
+                case "durationMinutes" -> exactDuration(entry.getValue());
                 case "user" -> filterByUser(entry.getValue());
                 default -> null;
             };
             if (currentFilter != null) {
-                specification = (specification == null)
-                        ? currentFilter
-                        : specification.and(currentFilter);
+                specification = specification.and(currentFilter);
             }
         }
         return specification;
@@ -57,9 +62,20 @@ public class ExercisesSpec implements Specification<ExercisesEntity> {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
 
-    private Specification<ExercisesEntity> filterByDate(String date) {
-        return (root, query, cb) -> cb.equal(root.<LocalDate>get("date"), DateTimeUtils.parseToLocalDate(date));
+    private Specification<ExercisesEntity> exactDate(String date) {
+        return (root, query, cb) -> cb.equal(root.<LocalDate>get("trainingDate"), LocalDate.parse(date));
+    }
 
+    private Specification<ExercisesEntity> exactTime(String field, String value) {
+        return (root, query, cb) -> cb.equal(root.<LocalTime>get(field), LocalTime.parse(value));
+    }
+
+    private Specification<ExercisesEntity> exactDuration(String value) {
+        return (root, query, cb) -> cb.equal(root.<Integer>get("durationMinutes"), Integer.valueOf(value));
+    }
+
+    private Specification<ExercisesEntity> notErased() {
+        return (root, query, cb) -> cb.isFalse(root.get("erased"));
     }
 
 }

@@ -1,5 +1,6 @@
 package com.alness.lifemaster.modules.specification;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -8,6 +9,7 @@ import org.springframework.lang.Nullable;
 
 import com.alness.lifemaster.modules.entity.ModuleEntity;
 import com.alness.lifemaster.profiles.entity.ProfileEntity;
+import static com.alness.lifemaster.common.specification.FilterSpecifications.containsIgnoreCase;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -28,10 +30,16 @@ public class ModuleSpecification implements Specification<ModuleEntity> {
 
         Specification<ModuleEntity> specification = status();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<ModuleEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
-                case "profile" ->hasProfileId(entry.getValue());
+                case "profile" -> hasProfileId(entry.getValue());
                 case "level" -> filterByLevel(entry.getValue());
+                case "isParent" -> exactBoolean("isParent", entry.getValue());
+                case "name", "route", "permissionKey", "iconName", "description" ->
+                    containsIgnoreCase(entry.getKey(), entry.getValue());
                 default -> null;
             };
 
@@ -45,7 +53,8 @@ public class ModuleSpecification implements Specification<ModuleEntity> {
     }
 
     private Specification<ModuleEntity> filterById(String id) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.<String>get("id"), id);
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
 
     private Specification<ModuleEntity> status() {
@@ -54,7 +63,12 @@ public class ModuleSpecification implements Specification<ModuleEntity> {
     }
 
     private Specification<ModuleEntity> filterByLevel(String level) {
-        return (root, query, cb) -> cb.equal(root.<String>get("level"), level);
+        return (root, query, cb) -> cb.equal(
+                cb.lower(root.<String>get("level")), level.toLowerCase(Locale.ROOT));
+    }
+
+    private Specification<ModuleEntity> exactBoolean(String field, String value) {
+        return (root, query, cb) -> cb.equal(root.<Boolean>get(field), Boolean.valueOf(value));
 
     }
 

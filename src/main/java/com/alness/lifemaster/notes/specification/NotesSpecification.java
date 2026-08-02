@@ -8,6 +8,7 @@ import org.springframework.lang.Nullable;
 
 import com.alness.lifemaster.notes.entity.NotesEntity;
 import com.alness.lifemaster.users.entity.UserEntity;
+import static com.alness.lifemaster.common.specification.FilterSpecifications.containsIgnoreCase;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -27,20 +28,21 @@ public class NotesSpecification implements Specification<NotesEntity> {
 
     public Specification<NotesEntity> getSpecificationByFilters(Map<String, String> params) {
 
-        Specification<NotesEntity> specification = null;
+        Specification<NotesEntity> specification = notErased();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<NotesEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
-                case "title" -> filterBySource(entry.getValue());
+                case "title", "content" -> containsIgnoreCase(entry.getKey(), entry.getValue());
                 case "user" -> filterByUser(entry.getValue());
 
                 default -> null;
             };
 
             if (currentFilter != null) {
-                specification = (specification == null)
-                        ? currentFilter
-                        : specification.and(currentFilter);
+                specification = specification.and(currentFilter);
             }
         }
         return specification;
@@ -57,8 +59,7 @@ public class NotesSpecification implements Specification<NotesEntity> {
         return (root, query, cb) -> cb.equal(root.<UUID>get("id"), UUID.fromString(id));
     }
 
-    private Specification<NotesEntity> filterBySource(String title) {
-        return (root, query, cb) -> cb.equal(root.<String>get("title"), title);
-
+    private Specification<NotesEntity> notErased() {
+        return (root, query, cb) -> cb.isFalse(root.get("erased"));
     }
 }
