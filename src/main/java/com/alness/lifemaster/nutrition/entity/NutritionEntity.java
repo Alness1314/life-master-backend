@@ -2,6 +2,7 @@ package com.alness.lifemaster.nutrition.entity;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,6 +10,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import com.alness.lifemaster.users.entity.UserEntity;
+import com.alness.lifemaster.files.StoredFileEntity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -19,6 +21,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -36,15 +39,22 @@ public class NutritionEntity {
     @Column(name = "date_time_consumption", nullable = false, columnDefinition = "timestamp without time zone")
     private LocalDateTime dateTimeConsumption;
 
+    @Column(name = "name", nullable = false, length = 256)
+    private String name;
+
     @OneToMany(mappedBy = "nutrition", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(value = FetchMode.SUBSELECT)
-    private List<FoodEntity> food;
+    private List<FoodEntity> food = new ArrayList<>();
 
     @Column(name = "meal_type", nullable = true, columnDefinition = "character varying(128)")
     private String mealType;
 
     @Column(name = "notes", nullable = true, columnDefinition = "text")
     private String notes;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "photo_file_id")
+    private StoredFileEntity photo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)

@@ -10,6 +10,7 @@ import org.springframework.lang.Nullable;
 import com.alness.lifemaster.nutrition.entity.NutritionEntity;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.utils.DateTimeUtils;
+import static com.alness.lifemaster.common.specification.FilterSpecifications.containsIgnoreCase;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -31,12 +32,17 @@ public class NutritionSpec implements Specification<NutritionEntity> {
 
         Specification<NutritionEntity> specification = active();
         for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                continue;
+            }
             Specification<NutritionEntity> currentFilter = switch (entry.getKey()) {
                 case "id" -> filterById(entry.getValue());
 
                 case "date" -> filterByDate(entry.getValue());
 
                 case "user" -> filterByUser(entry.getValue());
+
+                case "name", "mealType", "notes" -> containsIgnoreCase(entry.getKey(), entry.getValue());
 
                 default -> null;
             };

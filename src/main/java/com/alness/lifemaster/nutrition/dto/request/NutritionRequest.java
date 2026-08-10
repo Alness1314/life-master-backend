@@ -4,7 +4,6 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,9 +20,13 @@ public class NutritionRequest {
     @NotBlank
     private String dateTimeConsumption;
 
-    @NotEmpty
     @Valid
+    @Size(max = 50)
     private List<FoodRequest> food;
+
+    @NotBlank
+    @Size(max = 256)
+    private String name;
 
     @NotBlank
     @Size(max = 128)
@@ -31,4 +34,6 @@ public class NutritionRequest {
 
     @Size(max = 4000)
     private String notes;
+
+    private Boolean removePhoto;
 }

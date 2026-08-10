@@ -18,9 +18,11 @@ import lombok.Setter;
 public class NutritionResponse {
     private UUID id;
     private LocalDateTime dateTimeConsumption;
+    private String name;
     private List<FoodResponse> food;
     private String mealType;
     private String notes;
+    private UUID photoId;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
     private Boolean erased;

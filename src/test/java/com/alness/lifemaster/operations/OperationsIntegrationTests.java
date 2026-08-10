@@ -26,6 +26,10 @@ import com.alness.lifemaster.operations.audit.*;
 import com.alness.lifemaster.operations.reminder.*;
 import com.alness.lifemaster.operations.alert.FinancialAlertService;
 import com.alness.lifemaster.files.*;
+import com.alness.lifemaster.nutrition.dto.request.FoodRequest;
+import com.alness.lifemaster.nutrition.dto.request.NutritionRequest;
+import com.alness.lifemaster.nutrition.dto.response.NutritionResponse;
+import com.alness.lifemaster.nutrition.service.NutritionService;
 
 @SpringBootTest
 @Transactional
@@ -40,6 +44,50 @@ class OperationsIntegrationTests {
     @Autowired private FinancialReminderService reminderService;
     @Autowired private FinancialAlertService alertService;
     @Autowired private StoredFileService storedFileService;
+    @Autowired private NutritionService nutritionService;
+
+    @Test
+    void storesOptionalNutritionFoodsAndPhoto() {
+        UUID userId = userRepository.findAll().get(0).getId();
+        MockMultipartFile photo = new MockMultipartFile("photo", "meal.jpg", "image/jpeg",
+                new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
+        NutritionRequest create = NutritionRequest.builder()
+                .dateTimeConsumption("2026-08-10 14:30:00")
+                .mealType("LUNCH")
+                .name("Comida familiar")
+                .notes("Registro sin desglose")
+                .food(java.util.List.of())
+                .build();
+
+        NutritionResponse saved = nutritionService.save(userId.toString(), create, photo);
+
+        assertThat(saved.getFood()).isEmpty();
+        assertThat(saved.getPhotoId()).isNotNull();
+        assertThat(nutritionService.photo(userId.toString(), saved.getId().toString()).path()).exists();
+
+        NutritionRequest update = NutritionRequest.builder()
+                .dateTimeConsumption("2026-08-10 14:30:00")
+                .mealType("LUNCH")
+                .name("Comida familiar actualizada")
+                .food(java.util.List.of(FoodRequest.builder()
+                        .foodName("Ensalada")
+                        .quantity("1")
+                        .calories(null)
+                        .unitMeasurement(null)
+                        .build()))
+                .removePhoto(true)
+                .build();
+
+        NutritionResponse updated = nutritionService.update(
+                userId.toString(), saved.getId().toString(), update);
+
+        assertThat(updated.getName()).isEqualTo("Comida familiar actualizada");
+        assertThat(updated.getFood()).singleElement().satisfies(food -> {
+            assertThat(food.getCalories()).isNull();
+            assertThat(food.getUnitMeasurement()).isNull();
+        });
+        assertThat(updated.getPhotoId()).isNull();
+    }
 
     @Test
     void storesAndDownloadsPrivateExpenseReceipt() throws Exception {

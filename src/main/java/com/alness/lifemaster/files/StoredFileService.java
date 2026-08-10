@@ -100,8 +100,9 @@ public class StoredFileService {
         if (!StringUtils.hasText(name) || name.contains("..")) {
             throw badRequest("El nombre del archivo es inválido.");
         }
-        if (purpose == FilePurpose.PROFILE_IMAGE && !IMAGE_TYPES.contains(file.getContentType())) {
-            throw badRequest("La imagen de perfil debe ser PNG, JPEG o WEBP.");
+        if ((purpose == FilePurpose.PROFILE_IMAGE || purpose == FilePurpose.NUTRITION_IMAGE)
+                && !IMAGE_TYPES.contains(file.getContentType())) {
+            throw badRequest("La imagen debe ser PNG, JPEG o WEBP.");
         }
     }
 
