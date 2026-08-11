@@ -24,6 +24,7 @@ class PermissionRouteResolverTests {
             "POST,/api/v1/users/4f94fd16/assistance,asistencia,CREATE",
             "GET,/api/v1/users/4f94fd16/bank-imports/template.xlsx,bank-import,READ",
             "POST,/api/v1/users/4f94fd16/bank-imports/file,bank-import,CREATE",
+            "GET,/api/v1/users/4f94fd16/reports/summary,reports,READ",
             "PATCH,/api/v1/users/4f94fd16/alerts/abc/read,alerts,UPDATE",
             "GET,/api/v1/audit-events/search,audit,READ",
             "GET,/api/v1/profiles,users,READ",
