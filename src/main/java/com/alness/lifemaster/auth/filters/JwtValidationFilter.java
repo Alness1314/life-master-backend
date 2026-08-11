@@ -20,6 +20,7 @@ import com.alness.lifemaster.auth.session.JwtSessionAttributes;
 import com.alness.lifemaster.auth.session.RevokedTokenService;
 import com.alness.lifemaster.users.entity.UserEntity;
 import com.alness.lifemaster.users.repository.UserRepository;
+import com.alness.lifemaster.swagger.SwaggerPaths;
 import com.alness.lifemaster.utils.ApiCodes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -45,6 +46,11 @@ public class JwtValidationFilter extends BasicAuthenticationFilter{
         this.jwtTokenConfig = jwtTokenConfig;
         this.userRepository = userRepository;
         this.revokedTokenService = revokedTokenService;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return SwaggerPaths.isDocumentationRequest(request.getRequestURI());
     }
 
     @Override

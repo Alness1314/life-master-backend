@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -30,6 +31,7 @@ public class DebtsRequest {
     private String creditorName;
     @NotNull
     @DecimalMin("0.01")
+    @Digits(integer = 13, fraction = 8)
     private BigDecimal totalAmount;
     @NotBlank
     @ValidCurrency
@@ -55,6 +57,7 @@ public class DebtsRequest {
     @NotNull
     private Boolean disbursesFunds;
     @DecimalMin("0.01")
+    @Digits(integer = 13, fraction = 8)
     private BigDecimal receivedAmount;
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$")
     private String receivedDate;

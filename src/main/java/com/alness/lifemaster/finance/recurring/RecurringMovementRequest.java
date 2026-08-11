@@ -10,7 +10,7 @@ import com.alness.lifemaster.common.currency.ValidCurrency;
 public record RecurringMovementRequest(
         @NotNull MovementType movementType,
         @NotBlank @Size(max = 256) String description,
-        @NotNull @DecimalMin("0.01") BigDecimal amount,
+        @NotNull @DecimalMin("0.01") @Digits(integer = 13, fraction = 8) BigDecimal amount,
         @NotBlank @ValidCurrency String currency,
         UUID categoryId,
         UUID accountId,

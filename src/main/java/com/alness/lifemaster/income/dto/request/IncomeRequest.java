@@ -3,6 +3,7 @@ package com.alness.lifemaster.income.dto.request;
 import java.math.BigDecimal;
 import java.util.UUID;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -27,6 +28,7 @@ public class IncomeRequest {
     private String description;
     @NotNull
     @DecimalMin("0.01")
+    @Digits(integer = 13, fraction = 8)
     private BigDecimal amount;
     @NotBlank
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$")

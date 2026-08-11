@@ -55,10 +55,10 @@ spring:
 #Open api swagger ui 
 springdoc: 
     api-docs: 
-        enabled: ${SWAGGER_ENABLED:false}
+        enabled: ${SWAGGER_ENABLED:true}
         path: /api-docs
     swagger-ui:
-        enabled: ${SWAGGER_ENABLED:false}
+        enabled: ${SWAGGER_ENABLED:true}
         persist-authorization: true
         tags-sorter: alpha
         doc-expansion: list  # none | list | full

@@ -28,6 +28,7 @@ import com.alness.lifemaster.utils.ApiCodes;
 import com.alness.lifemaster.operations.audit.AuditEventService;
 import com.alness.lifemaster.operations.audit.AuditFilter;
 import com.alness.lifemaster.permissions.security.PermissionAuthorizationManager;
+import com.alness.lifemaster.swagger.SwaggerPaths;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -64,7 +65,7 @@ public class SpringSecurityConfig {
         http.authorizeHttpRequests(
                 request -> request.requestMatchers("/", apiPrefix + "/auth").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
+                        .requestMatchers(SwaggerPaths.securityMatchers()).permitAll()
                         .requestMatchers("/actuator/**").hasAuthority("Administrator")
                         .requestMatchers(apiPrefix + "/auth/**").authenticated()
                         .requestMatchers(apiPrefix + "/users/me/**", apiPrefix + "/catalogs/currencies")

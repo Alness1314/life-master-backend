@@ -6,6 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,7 @@ public class ExpensesRequest {
 
     @NotNull
     @DecimalMin(value = "0.01")
+    @Digits(integer = 13, fraction = 8)
     private BigDecimal amount;
 
     @NotNull

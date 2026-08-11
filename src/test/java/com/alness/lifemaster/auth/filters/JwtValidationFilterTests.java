@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.time.Instant;
 import java.util.Date;
@@ -82,6 +83,21 @@ class JwtValidationFilterTests {
 
         assertThat(response.getStatus()).isEqualTo(401);
         assertThat(response.getContentAsString()).contains("sesi");
+    }
+
+    @Test
+    void swaggerRemainsPublicEvenWhenTheBrowserSendsAnInvalidStoredToken() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/swagger-ui/index.html");
+        request.addHeader("Authorization", "Bearer invalid-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (downstreamRequest, downstreamResponse) -> {
+            downstreamResponse.getWriter().write("swagger");
+        });
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).isEqualTo("swagger");
+        verifyNoInteractions(userRepository, revokedTokenService);
     }
 
     private MockHttpServletRequest request(String token) {
