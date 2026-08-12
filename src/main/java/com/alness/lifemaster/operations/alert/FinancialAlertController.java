@@ -24,4 +24,9 @@ public class FinancialAlertController {
     public FinancialAlertResponse read(@PathVariable UUID userId, @PathVariable UUID id) {
         return service.markRead(userId, id);
     }
+
+    @PatchMapping("/read-all")
+    public void readAll(@PathVariable UUID userId) {
+        service.markAllRead(userId);
+    }
 }

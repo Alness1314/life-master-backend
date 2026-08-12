@@ -35,6 +35,8 @@ public class FinancialAlertEntity {
     private Boolean read;
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+    @Column(name = "email_sent_at")
+    private LocalDateTime emailSentAt;
 
     @PrePersist
     void create() {
