@@ -20,7 +20,8 @@ public class ConfigurationCORS {
                 registry.addMapping("/**")
                         .allowedOrigins(allowedOrigins)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
-                        .allowedHeaders("*");
+                        .allowedHeaders("*")
+                        .exposedHeaders("Content-Disposition", "Content-Type", "Content-Length");
             }
         };
 
