@@ -20,7 +20,12 @@ public class ReportExportService {
 
     public ReportExportFile export(UUID userId, ReportKind kind, ReportExportFormat format,
             ReportPeriod period, LocalDate referenceDate, String currency) {
-        ReportDocument document = documentFactory.create(userId, kind, period, referenceDate, currency);
+        return export(userId, kind, format, period, referenceDate, null, null, currency);
+    }
+
+    public ReportExportFile export(UUID userId, ReportKind kind, ReportExportFormat format,
+            ReportPeriod period, LocalDate referenceDate, LocalDate from, LocalDate to, String currency) {
+        ReportDocument document = documentFactory.create(userId, kind, period, referenceDate, from, to, currency);
         byte[] content = switch (format) {
             case CSV -> csvWriter.write(document);
             case XLSX -> excelWriter.write(document);

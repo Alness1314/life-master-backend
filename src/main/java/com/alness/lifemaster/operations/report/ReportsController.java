@@ -43,8 +43,10 @@ public class ReportsController {
     public AssistanceReportResponse assistance(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate) {
-        return reportsService.assistance(userId, period, referenceDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return reportsService.assistance(userId, period, referenceDate, from, to);
     }
 
     @GetMapping("/exercises")
@@ -52,8 +54,10 @@ public class ReportsController {
     public ExerciseReportResponse exercises(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate) {
-        return reportsService.exercises(userId, period, referenceDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return reportsService.exercises(userId, period, referenceDate, from, to);
     }
 
     @GetMapping("/nutrition")
@@ -61,8 +65,10 @@ public class ReportsController {
     public NutritionReportResponse nutrition(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate) {
-        return reportsService.nutrition(userId, period, referenceDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return reportsService.nutrition(userId, period, referenceDate, from, to);
     }
 
     @GetMapping("/expenses")
@@ -71,8 +77,10 @@ public class ReportsController {
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "MXN") CurrencyCode currency) {
-        return reportsService.expenses(userId, period, referenceDate, currency.name());
+        return reportsService.expenses(userId, period, referenceDate, from, to, currency.name());
     }
 
     @GetMapping("/income")
@@ -81,8 +89,10 @@ public class ReportsController {
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "MXN") CurrencyCode currency) {
-        return reportsService.income(userId, period, referenceDate, currency.name());
+        return reportsService.income(userId, period, referenceDate, from, to, currency.name());
     }
 
     @GetMapping("/debts")
@@ -91,8 +101,10 @@ public class ReportsController {
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "MXN") CurrencyCode currency) {
-        return reportsService.debts(userId, period, referenceDate, currency.name());
+        return reportsService.debts(userId, period, referenceDate, from, to, currency.name());
     }
 
     @GetMapping("/summary")
@@ -101,8 +113,10 @@ public class ReportsController {
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "MXN") CurrencyCode currency) {
-        return reportsService.summary(userId, period, referenceDate, currency.name());
+        return reportsService.summary(userId, period, referenceDate, from, to, currency.name());
     }
 
     @GetMapping("/{report}/export")
@@ -113,10 +127,12 @@ public class ReportsController {
             @RequestParam ReportExportFormat format,
             @RequestParam(defaultValue = "MONTHLY") ReportPeriod period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "MXN") CurrencyCode currency) {
         ReportKind kind = parseKind(report);
         ReportExportFile file = reportExportService.export(
-                userId, kind, format, period, referenceDate, currency.name());
+                userId, kind, format, period, referenceDate, from, to, currency.name());
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, file.contentType());
         headers.setContentDisposition(ContentDisposition.attachment().filename(file.fileName()).build());

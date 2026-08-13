@@ -14,6 +14,18 @@ class ReportPeriodResolverTests {
     private final ReportPeriodResolver resolver = new ReportPeriodResolver();
 
     @Test
+    void resolvesCustomRangeAndRejectsInvertedDates() {
+        ReportRange range = resolver.resolve(ReportPeriod.CUSTOM, null,
+                LocalDate.of(2026, 7, 20), LocalDate.of(2026, 8, 12));
+
+        assertThat(range.from()).isEqualTo(LocalDate.of(2026, 7, 20));
+        assertThat(range.to()).isEqualTo(LocalDate.of(2026, 8, 12));
+        assertThatThrownBy(() -> resolver.resolve(ReportPeriod.CUSTOM, null,
+                LocalDate.of(2026, 8, 13), LocalDate.of(2026, 8, 12)))
+                .isInstanceOf(RestExceptionHandler.class);
+    }
+
+    @Test
     void resolvesIsoWeekFromMondayToSunday() {
         ReportRange range = resolver.resolve(ReportPeriod.WEEKLY, LocalDate.of(2026, 8, 11));
 

@@ -51,9 +51,9 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ReportsService {
     private static final Set<ReportPeriod> ASSISTANCE_PERIODS = Set.of(
-            ReportPeriod.WEEKLY, ReportPeriod.FORTNIGHTLY, ReportPeriod.MONTHLY);
+            ReportPeriod.WEEKLY, ReportPeriod.FORTNIGHTLY, ReportPeriod.MONTHLY, ReportPeriod.CUSTOM);
     private static final Set<ReportPeriod> DAILY_WEEKLY_MONTHLY = Set.of(
-            ReportPeriod.DAILY, ReportPeriod.WEEKLY, ReportPeriod.MONTHLY);
+            ReportPeriod.DAILY, ReportPeriod.WEEKLY, ReportPeriod.MONTHLY, ReportPeriod.CUSTOM);
 
     private final ReportPeriodResolver periodResolver;
     private final UserRepository userRepository;
@@ -65,8 +65,13 @@ public class ReportsService {
     private final DebtsRespository debtsRepository;
 
     public AssistanceReportResponse assistance(UUID userId, ReportPeriod period, LocalDate referenceDate) {
+        return assistance(userId, period, referenceDate, null, null);
+    }
+
+    public AssistanceReportResponse assistance(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to) {
         validateUser(userId);
-        ReportRange range = periodResolver.resolveAllowed(period, referenceDate, ASSISTANCE_PERIODS);
+        ReportRange range = periodResolver.resolveAllowed(period, referenceDate, from, to, ASSISTANCE_PERIODS);
         List<AssistanceEntity> records = assistanceRepository
                 .findAllByUserIdAndWorkDateBetweenOrderByWorkDateAsc(userId, range.from(), range.to());
         List<AssistanceReportResponse.Item> items = records.stream().map(value -> {
@@ -83,8 +88,13 @@ public class ReportsService {
     }
 
     public ExerciseReportResponse exercises(UUID userId, ReportPeriod period, LocalDate referenceDate) {
+        return exercises(userId, period, referenceDate, null, null);
+    }
+
+    public ExerciseReportResponse exercises(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to) {
         validateUser(userId);
-        ReportRange range = periodResolver.resolveAllowed(period, referenceDate, DAILY_WEEKLY_MONTHLY);
+        ReportRange range = periodResolver.resolveAllowed(period, referenceDate, from, to, DAILY_WEEKLY_MONTHLY);
         List<ExercisesEntity> records = exercisesRepository
                 .findAllByUserIdAndTrainingDateBetweenAndErasedFalseOrderByTrainingDateAsc(
                         userId, range.from(), range.to());
@@ -103,8 +113,13 @@ public class ReportsService {
     }
 
     public NutritionReportResponse nutrition(UUID userId, ReportPeriod period, LocalDate referenceDate) {
+        return nutrition(userId, period, referenceDate, null, null);
+    }
+
+    public NutritionReportResponse nutrition(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to) {
         validateUser(userId);
-        ReportRange range = periodResolver.resolveAllowed(period, referenceDate, DAILY_WEEKLY_MONTHLY);
+        ReportRange range = periodResolver.resolveAllowed(period, referenceDate, from, to, DAILY_WEEKLY_MONTHLY);
         List<NutritionEntity> records = nutritionRecords(userId, range);
         List<FoodEntity> foods = records.stream().flatMap(value -> safeFoods(value).stream()).toList();
         Map<String, Long> byType = records.stream().collect(Collectors.groupingBy(
@@ -124,9 +139,14 @@ public class ReportsService {
     }
 
     public ExpenseReportResponse expenses(UUID userId, ReportPeriod period, LocalDate referenceDate, String currency) {
+        return expenses(userId, period, referenceDate, null, null, currency);
+    }
+
+    public ExpenseReportResponse expenses(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to, String currency) {
         validateUser(userId);
         String normalizedCurrency = normalizeCurrency(currency);
-        ReportRange range = periodResolver.resolve(period, referenceDate);
+        ReportRange range = periodResolver.resolve(period, referenceDate, from, to);
         List<ExpensesEntity> records = expenseRecords(userId, range, normalizedCurrency);
         BigDecimal total = sum(records, ExpensesEntity::getAmount);
         BigDecimal paid = sum(records.stream().filter(value -> Boolean.TRUE.equals(value.getPaymentStatus())).toList(),
@@ -147,9 +167,14 @@ public class ReportsService {
     }
 
     public IncomeReportResponse income(UUID userId, ReportPeriod period, LocalDate referenceDate, String currency) {
+        return income(userId, period, referenceDate, null, null, currency);
+    }
+
+    public IncomeReportResponse income(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to, String currency) {
         validateUser(userId);
         String normalizedCurrency = normalizeCurrency(currency);
-        ReportRange range = periodResolver.resolve(period, referenceDate);
+        ReportRange range = periodResolver.resolve(period, referenceDate, from, to);
         List<IncomeEntity> records = incomeRecords(userId, range, normalizedCurrency);
         Map<String, BigDecimal> bySource = records.stream().collect(Collectors.groupingBy(
                 value -> label(value.getSource(), "Sin especificar"), LinkedHashMap::new,
@@ -162,9 +187,14 @@ public class ReportsService {
     }
 
     public DebtReportResponse debts(UUID userId, ReportPeriod period, LocalDate referenceDate, String currency) {
+        return debts(userId, period, referenceDate, null, null, currency);
+    }
+
+    public DebtReportResponse debts(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to, String currency) {
         validateUser(userId);
         String normalizedCurrency = normalizeCurrency(currency);
-        ReportRange range = periodResolver.resolve(period, referenceDate);
+        ReportRange range = periodResolver.resolve(period, referenceDate, from, to);
         List<DebtsEntity> debts = debtRecords(userId, normalizedCurrency);
         List<DebtReportResponse.Item> items = debts.stream().map(debt -> debtItem(debt, range)).toList();
         List<PaymentsEntity> periodPayments = debts.stream().flatMap(debt -> safePayments(debt).stream())
@@ -191,9 +221,14 @@ public class ReportsService {
 
     public ConsolidatedReportResponse summary(
             UUID userId, ReportPeriod period, LocalDate referenceDate, String currency) {
+        return summary(userId, period, referenceDate, null, null, currency);
+    }
+
+    public ConsolidatedReportResponse summary(UUID userId, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to, String currency) {
         validateUser(userId);
         String normalizedCurrency = normalizeCurrency(currency);
-        ReportRange range = periodResolver.resolve(period, referenceDate);
+        ReportRange range = periodResolver.resolve(period, referenceDate, from, to);
         List<ExpensesEntity> expenses = expenseRecords(userId, range, normalizedCurrency);
         List<IncomeEntity> income = incomeRecords(userId, range, normalizedCurrency);
         List<DebtsEntity> debts = debtRecords(userId, normalizedCurrency);

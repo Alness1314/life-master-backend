@@ -4,5 +4,6 @@ public enum ReportPeriod {
     DAILY,
     WEEKLY,
     FORTNIGHTLY,
-    MONTHLY
+    MONTHLY,
+    CUSTOM
 }

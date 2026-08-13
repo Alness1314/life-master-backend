@@ -31,14 +31,19 @@ public class ReportDocumentFactory {
             ReportPeriod period,
             LocalDate referenceDate,
             String currency) {
+        return create(userId, kind, period, referenceDate, null, null, currency);
+    }
+
+    public ReportDocument create(UUID userId, ReportKind kind, ReportPeriod period, LocalDate referenceDate,
+            LocalDate from, LocalDate to, String currency) {
         return switch (kind) {
-            case SUMMARY -> summary(reportsService.summary(userId, period, referenceDate, currency));
-            case ASSISTANCE -> assistance(reportsService.assistance(userId, period, referenceDate));
-            case EXERCISES -> exercises(reportsService.exercises(userId, period, referenceDate));
-            case NUTRITION -> nutrition(reportsService.nutrition(userId, period, referenceDate));
-            case EXPENSES -> expenses(reportsService.expenses(userId, period, referenceDate, currency));
-            case INCOME -> income(reportsService.income(userId, period, referenceDate, currency));
-            case DEBTS -> debts(reportsService.debts(userId, period, referenceDate, currency));
+            case SUMMARY -> summary(reportsService.summary(userId, period, referenceDate, from, to, currency));
+            case ASSISTANCE -> assistance(reportsService.assistance(userId, period, referenceDate, from, to));
+            case EXERCISES -> exercises(reportsService.exercises(userId, period, referenceDate, from, to));
+            case NUTRITION -> nutrition(reportsService.nutrition(userId, period, referenceDate, from, to));
+            case EXPENSES -> expenses(reportsService.expenses(userId, period, referenceDate, from, to, currency));
+            case INCOME -> income(reportsService.income(userId, period, referenceDate, from, to, currency));
+            case DEBTS -> debts(reportsService.debts(userId, period, referenceDate, from, to, currency));
         };
     }
 
